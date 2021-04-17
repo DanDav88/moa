@@ -22,148 +22,90 @@ package moa.tasks;
 
 import com.github.javacliparser.FloatOption;
 import com.yahoo.labs.samoa.instances.Instances;
-import moa.capabilities.CapabilitiesHandler;
 import moa.core.ObjectRepository;
 import moa.learners.featureanalysis.ClassifierWithFeatureImportance;
 import moa.options.ClassOption;
 
-import javax.swing.*;
-import java.util.Arrays;
+import java.util.ArrayList;
 
 /**
  * This class Provides GUI to user so that they can configure parameters for feature importance algorithm.
  * After user clicks Run button, this class executes task to compute scores of feature importance.
  */
-public class FeatureImportanceConfig extends ClassificationMainTask implements CapabilitiesHandler {
+public class FeatureImportanceConfig extends FeatureImportanceAbstract {
+  /**
+   * Provides GUI to user so that they can configure parameters for feature importance algorithm.
+   */
+  public ClassOption learnerOption = new ClassOption("learner", 'l',
+          "Classifier with feature importance Learner to train.", ClassifierWithFeatureImportance.class,
+          "moa.learners.featureanalysis.ClassifierWithFeatureImportance");
 
-    private static final long serialVersionUID = 1L;
+  public FloatOption nanSubstitute = new FloatOption(
+          "NaNSubstitute", 'u',
+          "When scores of feature importance are NaN, NaN will be replaced by NaNSubstitute shown in line graph.", 0,
+          Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
 
-    /**
-     * This holds the current set of instances
-     */
-    protected Instances m_instances;
+  /**
+   * After user clicks Run button, this method executes task to compute scores of feature importance and return.
+   *
+   * @param monitor    the TaskMonitor to use
+   * @param repository the ObjectRepository to use
+   * @return scores of features' importance
+   */
+  @Override
+  protected Object doMainTask(TaskMonitor monitor, ObjectRepository repository) {
+    ClassifierWithFeatureImportance cwfi = (ClassifierWithFeatureImportance) getPreparedClassOption(learnerOption);
+    cwfi.resetLearningImpl();
 
-    /** Scores produced by feature importance algorithm. */
-    protected double[][] scores;
+    int windowSize = cwfi.windowSizeOption.getValue();
+    setWindowSize(windowSize);
 
-    /** When scores of feature importance are NaNs, NaNs will be replaced by NaNSubstitute
-     * shown in feature importance line graph.*/
-    protected double m_NaNSubstitute=0.0;//default value is 0.0
+    boolean doNotNormalizeFeatureScore = cwfi.doNotNormalizeFeatureScoreOption.isSet();
+    setDoNotNormalizeFeatureScore(doNotNormalizeFeatureScore);
 
-    /** The default windowSize parameter for feature importance algorithm. */
-    protected int m_windowSize=500;
+    double nanSubstitute = this.nanSubstitute.getValue();
+    setNaNSubstitute(nanSubstitute);
 
-    /** The default doNotNormalizeFeatureScore parameter for feature importance algorithm.*/
-    protected boolean m_doNotNormalizeFeatureScore=false;
+    int row = 0;
+    int instanceSeen = 0;
 
-    /** Use progress bar to show the progress of computing scores of feature importance. */
-    protected JProgressBar progressBar=new JProgressBar();
+    int numInstances = m_instances.numInstances();
+    int rows = numInstances / windowSize; //neglect remainder
+    int columns = m_instances.numAttributes() - 1;// There is no feature importance for class
+    double[][] scores = new double[rows][columns];
 
-    public double getNaNSubstitute() {
-        return m_NaNSubstitute;
-    }
+    progressBar.setValue(0);
+    progressBar.setMaximum(rows);
 
-    public void setNaNSubstitute(double NaNSubstitute) {
-        this.m_NaNSubstitute = NaNSubstitute;
-    }
+    if(m_instances != null) {
 
-    public JProgressBar getProgressBar() {
-        return progressBar;
-    }
+      for(int i = 0; i < numInstances; i++) {
+        instanceSeen++;
 
-    public int getWindowSize() {
-        return m_windowSize;
-    }
+        /** First train, then get scores. */
+        cwfi.trainOnInstance(m_instances.get(i));//train
 
-    public void setWindowSize(int windowSize) {
-        this.m_windowSize = windowSize;
-    }
-
-    public boolean doNotNormalizeFeatureScore() {
-        return m_doNotNormalizeFeatureScore;
-    }
-
-    public void setDoNotNormalizeFeatureScore(boolean doNotNormalizeFeatureScore) {
-        this.m_doNotNormalizeFeatureScore = doNotNormalizeFeatureScore;
-    }
-
-    /**
-     * Provides GUI to user so that they can configure parameters for feature importance algorithm.
-     */
-    public ClassOption learnerOption = new ClassOption("learner", 'l',
-            "Classifier with feature importance Learner to train.", ClassifierWithFeatureImportance.class,
-            "moa.learners.featureanalysis.ClassifierWithFeatureImportance");
-
-    public FloatOption nanSubstitute = new FloatOption(
-            "NaNSubstitute", 'u',
-            "When scores of feature importance are NaN, NaN will be replaced by NaNSubstitute shown in line graph.", 0,
-            Double.NEGATIVE_INFINITY,Double.POSITIVE_INFINITY);
-
-    /**
-     * After user clicks Run button, this method executes task to compute scores of feature importance and return.
-     * @param monitor the TaskMonitor to use
-     * @param repository  the ObjectRepository to use
-     * @return scores of features' importance
-     */
-    @Override
-    protected Object doMainTask(TaskMonitor monitor, ObjectRepository repository) {
-        ClassifierWithFeatureImportance cwfi = (ClassifierWithFeatureImportance) getPreparedClassOption(learnerOption);
-        cwfi.resetLearningImpl();
-
-        int windowSize = cwfi.windowSizeOption.getValue();
-        setWindowSize(windowSize);
-
-        boolean doNotNormalizeFeatureScore = cwfi.doNotNormalizeFeatureScoreOption.isSet();
-        setDoNotNormalizeFeatureScore(doNotNormalizeFeatureScore);
-
-        double nanSubstitute = this.nanSubstitute.getValue();
-        setNaNSubstitute(nanSubstitute);
-
-        int row = 0;
-        int instanceSeen = 0;
-
-        int numInstances = m_instances.numInstances();
-        int rows = numInstances / windowSize; //neglect remainder
-        int columns = m_instances.numAttributes() - 1;// There is no feature importance for class
-        double[][] scores = new double[rows][columns];
-
-        progressBar.setValue(0);
-        progressBar.setMaximum(rows);
-
-        if (m_instances != null) {
-
-                for (int i = 0; i < numInstances; i++) {
-                    instanceSeen++;
-
-                    /** First train, then get scores. */
-                    cwfi.trainOnInstance(m_instances.get(i));//train
-
-                    if (instanceSeen % windowSize == 0) {
-                        double[] currentScore = cwfi.getCurrentFeatureImportances();//get scores
-                        for (int j = 0; j < columns; j++) {
-                            scores[row][j] = currentScore[j];
-                        }
-                        row++;
-                        progressBar.setValue(row);
-                    }
-
-                }
-
+        if(instanceSeen % windowSize == 0) {
+          double[] currentScore = cwfi.getCurrentFeatureImportances();//get scores
+          for(int j = 0; j < columns; j++) {
+            scores[row][j] = currentScore[j];
+          }
+          row++;
+          progressBar.setValue(row);
         }
-        return scores;
-    }
 
-    @Override
-    public Class<?> getTaskResultType() {
-        return null;
+      }
     }
+    return scores;
+  }
 
-    @Override
-    public String getPurposeString() {
-        return "Set parameters for feature importance learner to get scores of feature importance.";
-    }
+  @Override
+  public Class<?> getTaskResultType() {
+    return null;
+  }
 
-    public void setInstances(Instances instances) {
-        this.m_instances = instances;
-    }
+  @Override
+  public String getPurposeString() {
+    return "Set parameters for feature importance learner to get scores of feature importance.";
+  }
 }

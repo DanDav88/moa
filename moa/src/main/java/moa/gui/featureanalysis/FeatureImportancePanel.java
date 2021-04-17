@@ -238,7 +238,7 @@ public class FeatureImportancePanel extends AbstractPerspective {
                             attributeNames[i] = m_Instances.attribute(i).name();
                         }
 
-                        ((FeatureImportanceConfig)currentTask).setInstances(m_Instances);
+                        ((FeatureImportanceAbstract)currentTask).setInstances(m_Instances);
                         //runTask((Task) FeatureImportancePanel.this.currentTask.copy());//Can not be used in this case.
                         runTask((Task) FeatureImportancePanel.this.currentTask);
 
@@ -285,7 +285,7 @@ public class FeatureImportancePanel extends AbstractPerspective {
                                     scoresCopyForGraph[k]=scores[k].clone();
                                 }
 
-                                double naNSubstitute= ((FeatureImportanceConfig)currentTask).getNaNSubstitute();
+                                double naNSubstitute= ((FeatureImportanceAbstract)currentTask).getNaNSubstitute();
                                 for(int i=0; i<rows; i++){
                                     for(int j=0; j<columns; j++){
                                         if(Double.isNaN(scoresCopyForGraph[i][j])){
@@ -301,7 +301,7 @@ public class FeatureImportancePanel extends AbstractPerspective {
                             }
                         });
 
-                        JProgressBar sourceProgressBar =((FeatureImportanceConfig) currentTask).getProgressBar();
+                        JProgressBar sourceProgressBar =((FeatureImportanceAbstract) currentTask).getProgressBar();
 
                         sourceProgressBar.addChangeListener(new ChangeListener() {
                             @Override

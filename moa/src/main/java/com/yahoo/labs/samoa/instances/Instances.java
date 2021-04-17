@@ -649,6 +649,10 @@ public class Instances implements Serializable {
         return indicesIrrelevants;
     }
 
+    public ArrayList<Instance> getInstances() {
+        return (ArrayList<Instance>) instances;
+    }
+
     /**
      * Sets the indices of relevant features.
      * This method also sets the irrelevant ones since
