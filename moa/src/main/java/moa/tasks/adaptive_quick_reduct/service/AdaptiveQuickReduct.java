@@ -110,7 +110,7 @@ public class AdaptiveQuickReduct {
               currentReduct.getReductSet(), removedAttributes, iWindow
       );
 
-      Map<Integer, Double> attributesGamma = informationGranules.entrySet().stream().map(entrySet -> new AbstractMap.SimpleEntry<>(
+      Map<Integer, Double> attributesGamma = informationGranules.entrySet().parallelStream().map(entrySet -> new AbstractMap.SimpleEntry<>(
                       entrySet.getKey(), computeGammaValue(entrySet.getValue(), decisionFeaturesD, iWindow.size())
               )
       ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -140,8 +140,8 @@ public class AdaptiveQuickReduct {
                                    ArrayList<HashSet<Integer>> decisionFeaturesD,
                                    int universeSizeU) {
 
-    int lowerApproximationSize = attributeGranules.stream()
-            .filter(granule -> decisionFeaturesD.stream().anyMatch(classFeaturesSet -> classFeaturesSet.containsAll(granule)))
+    int lowerApproximationSize = attributeGranules.parallelStream()
+            .filter(granule -> decisionFeaturesD.parallelStream().anyMatch(classFeaturesSet -> classFeaturesSet.containsAll(granule)))
             .map(filteredGranule -> filteredGranule.size())
             .reduce(0, (subtotal, element) -> subtotal + element);
 
@@ -167,7 +167,7 @@ public class AdaptiveQuickReduct {
       }
     });
 
-    attributesTryToAdd.forEach(attributeIndex -> {
+    attributesTryToAdd.parallelStream().forEach(attributeIndex -> {
       HashSet<LightInstance> instancesSet = new HashSet<>(iWindow);
       assert instancesSet.size() == iWindow.size() : "getInformationGranules: Instance Set and window have not the same size!";
       HashSet<Integer> attributeSets = new HashSet<>(reductElements);
@@ -192,11 +192,11 @@ public class AdaptiveQuickReduct {
     do {
       LightInstance iInstance = instancesSet.iterator().next();
 
-      Set<LightInstance> sameValueInstances = instancesSet.stream().filter(instance ->
+      Set<LightInstance> sameValueInstances = instancesSet.parallelStream().filter(instance ->
               instance.hasSameAttributesValue(iInstance, attributeSet)
       ).collect(Collectors.toSet());
 
-      Set<Integer> sameValueInstancesIndex = sameValueInstances.stream().map(LightInstance::getInstanceIndex).collect(Collectors.toSet());
+      Set<Integer> sameValueInstancesIndex = sameValueInstances.parallelStream().map(LightInstance::getInstanceIndex).collect(Collectors.toSet());
 
       granules.add(new HashSet<>(sameValueInstancesIndex));
 
