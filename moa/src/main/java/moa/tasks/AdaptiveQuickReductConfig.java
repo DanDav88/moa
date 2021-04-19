@@ -2,27 +2,27 @@ package moa.tasks;
 
 import com.github.javacliparser.FloatOption;
 import com.github.javacliparser.IntOption;
-import com.yahoo.labs.samoa.instances.Instance;
 import moa.core.ObjectRepository;
 import moa.tasks.adaptive_quick_reduct.model.Reduct;
 import moa.tasks.adaptive_quick_reduct.model.SlidingWindow;
 import moa.tasks.adaptive_quick_reduct.model.Window;
 import moa.tasks.adaptive_quick_reduct.model.instance_utils.DatasetInfos;
 import moa.tasks.adaptive_quick_reduct.model.instance_utils.LightInstance;
+import moa.tasks.adaptive_quick_reduct.service.AdaptiveQuickReduct;
 
 import java.util.ArrayList;
 
-public class AdaptiveQuickReduct extends FeatureImportanceAbstract {
+public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
   @Override
   protected Object doMainTask(TaskMonitor monitor, ObjectRepository repository) {
 
     DatasetInfos datasetInfos = new DatasetInfos(m_instances);
 
-    ArrayList<LightInstance> myInstances = new ArrayList<>(m_instances.numInstances());
+    ArrayList<LightInstance> myInstances = new ArrayList<>(datasetInfos.getNumInstances());
 
-    for (int i = 0; i< m_instances.numInstances(); i++){
-      myInstances.add(new LightInstance(m_instances.getInstances().get(i),i));
+    for(int i = 0; i < datasetInfos.getNumInstances(); i++) {
+      myInstances.add(new LightInstance(m_instances.getInstances().get(i), i));
     }
 
     Window<LightInstance> windows = new SlidingWindow<>(myInstances, windowSizeOption.getValue(), overlapLengthOption.getValue());
@@ -38,78 +38,46 @@ public class AdaptiveQuickReduct extends FeatureImportanceAbstract {
 
     int iterationNumber = 0;
 
-
-
-
-
     ArrayList<LightInstance> iWindow = windows.getNextWindow();
 
+    Reduct<Integer> previousReduct = new Reduct<>();
+    ArrayList<Reduct<Integer>> reducts = new ArrayList<>(windows.getTotalIterationNumber());
+
+    AdaptiveQuickReduct aqr = new AdaptiveQuickReduct(datasetInfos);
+
     while(!iWindow.isEmpty()) {
+
+      Reduct<Integer> currentReduct = aqr.getReduct(iWindow, previousReduct);
+
+      reducts.add(new Reduct<>(currentReduct));
+      previousReduct = new Reduct<>(currentReduct);
 
       iWindow = windows.getNextWindow();
       progressBar.setValue(++iterationNumber);
     }
 
-//    HashSet<Attribute> attributes = m_instances.classAttribute();
-
-//    if(m_instances != null) {
-//      for(int j = 0; j < numInstances; j += windowSize) {
-//        Instance[] instancesCurrentWindow = new Instance[windowSize];
-//        int l = 0;
-//        for(int i = j; i < (Math.min(j + windowSize, numInstances)); i++) {
-//          instancesCurrentWindow[l] = m_instances.get(i);
-//          l++;
-//          progressBar.setValue(i + j);
-//        }
-//
-//        double[] currentScore = getCustomScores(instancesCurrentWindow);
-//
-//
-//        for(int k = 0; k < columns; k++) {
-//          scores[row][k] = currentScore[k];
-//        }
-//        row++;
-//      }
-//    }
-    return attributesScores;
-  }
-
-  private Reduct<Integer> performAdaptiveQuickReductStep(ArrayList<Instance> iWindow,
-                                                         Reduct<Integer> previousReduct) {
-
-    Reduct<Integer> iReduct = new Reduct<Integer>(previousReduct);
-
-    if (previousReduct.isEmpty()){
-
-
-    }
-    else{
-
-    }
-
-
-    return null;
+    return getAttributeScoresFromReducts(reducts, datasetInfos);
   }
 
 
-  private double[][] convertArrayListsToArray(ArrayList<ArrayList<Double>> scores) {
-    int rows = scores.size();
-    int columns = scores.get(0).size();
+  private double[][] getAttributeScoresFromReducts(ArrayList<Reduct<Integer>> reducts, DatasetInfos datasetInfos) {
+    int reductsNumber = reducts.size();
+    int attributesNumber = datasetInfos.getNumAttributes();
 
+    double[][] attributeScores = new double[reductsNumber][attributesNumber];
 
-    double[][] convertedList = new double[rows][columns];
-    for(int i = 0; i < columns; i++) {
-      for(int j = 0; j < columns; j++) {
-        convertedList[i][j] = scores.get(i).get(j);
+    for(int i = 0; i < reductsNumber; i++) {
+      for(int j = 0; j < attributesNumber; j++) {
+        attributeScores[i][j] = reducts.get(i).contains(j) ? 1.0 : 0.0;
       }
     }
-    return convertedList;
+    return attributeScores;
   }
 
   /**
    * Provides GUI to user so that they can configure parameters for feature importance algorithm.
    */
-  public IntOption windowSizeOption = new IntOption("windowSize", 'p', "The size of the windows used.", SlidingWindow.DEFAULT_WINDOW_SIZE);
+  public IntOption windowSizeOption = new IntOption("windowSize", 'w', "The size of the windows used.", SlidingWindow.DEFAULT_WINDOW_SIZE);
   public IntOption overlapLengthOption = new IntOption("overlap", 'v', "The length of windows overlap.", SlidingWindow.DEFAULT_OVERLAP);
   public FloatOption nanSubstitute = new FloatOption(
           "NaNSubstitute", 'u',

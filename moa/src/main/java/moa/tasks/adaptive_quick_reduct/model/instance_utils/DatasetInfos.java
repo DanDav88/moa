@@ -10,6 +10,7 @@ public class DatasetInfos {
 
   private final int numClasses;
   private final int numAttributes;
+  private final int numInstances;
   private final HashMap<String, Integer> labelToIndexAttributeDictionary;
   private final ArrayList<String> indexToLabelAttributeDictionary;
   private final HashMap<String, Integer> labelToIndexClassDictionary;
@@ -17,6 +18,7 @@ public class DatasetInfos {
   private final String datasetName;
 
   public DatasetInfos(String datasetName,
+                      int numInstances,
                       int numClasses,
                       int numAttributes,
                       HashMap<String, Integer> labelToIndexAttributeDictionary,
@@ -24,6 +26,7 @@ public class DatasetInfos {
                       HashMap<String, Integer> labelToIndexClassDictionary,
                       ArrayList<String> indexToLabelClassDictionary) {
     this.datasetName = datasetName;
+    this.numInstances = numInstances;
     this.numClasses = numClasses;
     this.numAttributes = numAttributes;
     this.labelToIndexAttributeDictionary = new HashMap<>(labelToIndexAttributeDictionary);
@@ -34,6 +37,7 @@ public class DatasetInfos {
 
   public DatasetInfos(Instances instances) {
     this.datasetName = instances.getRelationName();
+    this.numInstances = instances.numInstances();
     this.numClasses = instances.numClasses();
     this.numAttributes = instances.numAttributes() - 1;
     this.indexToLabelAttributeDictionary = new ArrayList<>(this.numAttributes);
@@ -50,6 +54,10 @@ public class DatasetInfos {
       this.labelToIndexClassDictionary.put(instances.classAttribute().value(i), i);
       this.indexToLabelClassDictionary.add(instances.classAttribute().value(i));
     }
+  }
+
+  public int getNumInstances() {
+    return numInstances;
   }
 
   public String getDatasetName() {

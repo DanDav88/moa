@@ -103,7 +103,7 @@ public class FeatureImportancePanel extends AbstractPerspective {
     protected FeatureImportanceGraph featureImportanceGraph= new FeatureImportanceGraph();
 
     /** The default windowSize parameter for feature importance algorithm. */
-    protected int m_windowSize=500;
+    protected int m_windowSize=10;
 
     public int getWindowSize() {
         return m_windowSize;

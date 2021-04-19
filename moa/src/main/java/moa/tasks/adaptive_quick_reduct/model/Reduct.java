@@ -9,11 +9,11 @@ public class Reduct<reductType> {
   private double gammaValue;
 
   public Reduct() {
-    this.reductSet = new HashSet<reductType>();
+    this.reductSet = new HashSet<>();
   }
 
-  public Reduct(Reduct<reductType> previous){
-    this.reductSet = new HashSet<reductType>(previous.getReductSet());
+  public Reduct(Reduct<reductType> previous) {
+    this.reductSet = new HashSet<>(previous.getReductSet());
     this.setGammaValue(previous.getGammaValue());
   }
 
@@ -29,22 +29,31 @@ public class Reduct<reductType> {
     this.gammaValue = gammaValue;
   }
 
-  public void addToReductAndUpdateGamma(reductType element, double newGamma){
+  public void addToReductAndUpdateGamma(reductType element, double newGamma) {
     this.reductSet.add(element);
     this.setGammaValue(newGamma);
   }
 
-  public void removeFromReductAndUpdateGamma(reductType element, double newGamma){
+  public void removeFromReductAndUpdateGamma(reductType element, double newGamma) {
     this.reductSet.remove(element);
     this.setGammaValue(newGamma);
   }
 
-  public boolean contains(reductType element){
+  public boolean contains(reductType element) {
     return this.reductSet.contains(element);
   }
 
-  public boolean isEmpty(){
+  public int size() {
+    return this.reductSet.size();
+  }
+
+  public boolean isEmpty() {
     return this.reductSet.isEmpty();
+  }
+
+  public boolean isEqual(Reduct<reductType> otherReduct) {
+    return this.size() == otherReduct.size() &&
+            this.reductSet.containsAll(otherReduct.getReductSet());
   }
 
 }

@@ -26,7 +26,7 @@ public abstract class FeatureImportanceAbstract extends ClassificationMainTask i
   /**
    * The default windowSize parameter for feature importance algorithm.
    */
-  protected int m_windowSize = 500;
+  protected int m_windowSize = 10;
 
   /**
    * The default doNotNormalizeFeatureScore parameter for feature importance algorithm.

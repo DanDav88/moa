@@ -3,6 +3,7 @@ package moa.tasks.adaptive_quick_reduct.model.instance_utils;
 import com.yahoo.labs.samoa.instances.Instance;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class LightInstance {
   private final int classIndex;
@@ -23,13 +24,13 @@ public class LightInstance {
     this.classLabel = instance.classAttribute().getAttributeValues().get(this.classIndex);
     this.attributes = new ArrayList<>(instance.numAttributes() - 1);
 
-    for(int i = 0; i< instance.numAttributes() - 1; i++){
-      if (instance.attribute(i).isNumeric()){
-        attributes.add(new DoubleAttributeValue(i, instance.attribute(i).name(),instance.value(i)));
+    for(int i = 0; i < instance.numAttributes() - 1; i++) {
+      if(instance.attribute(i).isNumeric()) {
+        attributes.add(new DoubleAttributeValue(i, instance.attribute(i).name(), instance.value(i)));
       }
-      else if(instance.attribute(i).isNominal()){
-         int stringKeyValue = (int)instance.value(i);
-         attributes.add(new StringAttributeValue(i, instance.attribute(i).name(), instance.attribute(i).getAttributeValues().get(stringKeyValue)));
+      else if(instance.attribute(i).isNominal()) {
+        int stringKeyValue = (int) instance.value(i);
+        attributes.add(new StringAttributeValue(i, instance.attribute(i).name(), instance.attribute(i).getAttributeValues().get(stringKeyValue)));
       }
     }
   }
@@ -53,4 +54,28 @@ public class LightInstance {
   public ArrayList<GenericAttributeValue> getAttributes() {
     return this.attributes;
   }
+
+  public GenericAttributeValue getAttributeByIndex(int attributeIndex) {
+    return this.attributes.get(attributeIndex);
+  }
+
+  public boolean hasSameAttributesValue(LightInstance otherInstance, HashSet<Integer> attributes) {
+
+    return attributes.stream().allMatch(attributeIndex -> {
+              if(this.getAttributeByIndex(attributeIndex) instanceof DoubleAttributeValue &&
+                      otherInstance.getAttributeByIndex(attributeIndex) instanceof DoubleAttributeValue) {
+                return ((DoubleAttributeValue) this.getAttributeByIndex(attributeIndex))
+                        .equals((DoubleAttributeValue) otherInstance.getAttributeByIndex(attributeIndex));
+              }
+              else if((this.getAttributeByIndex(attributeIndex) instanceof StringAttributeValue &&
+                      otherInstance.getAttributeByIndex(attributeIndex) instanceof StringAttributeValue)) {
+                return ((StringAttributeValue) this.getAttributeByIndex(attributeIndex))
+                        .equals((StringAttributeValue) otherInstance.getAttributeByIndex(attributeIndex));
+              }
+              else
+                return false;
+            }
+    );
+  }
+
 }
