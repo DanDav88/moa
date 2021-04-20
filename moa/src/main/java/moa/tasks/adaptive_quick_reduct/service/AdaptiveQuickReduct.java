@@ -106,7 +106,7 @@ public class AdaptiveQuickReduct {
 
     Reduct<Integer> currentReduct = new Reduct<>(previousReduct);
 
-    double currentGamma = 0.0;
+    double currentGamma = currentReduct.getGammaValue();;
 
     while(currentGamma == currentReduct.getGammaValue() && !currentReduct.hasMaxValue()) {
       HashMap<Integer, HashSet<HashSet<Integer>>> informationGranules = getInformationGranulesAddStep(
