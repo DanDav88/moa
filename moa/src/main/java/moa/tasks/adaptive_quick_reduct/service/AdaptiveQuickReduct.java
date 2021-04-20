@@ -118,13 +118,13 @@ public class AdaptiveQuickReduct {
               )
       ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-      Map.Entry<Integer, Double> maxEntry = null;
-
-      for(Map.Entry<Integer, Double> entry : attributesGamma.entrySet()) {
-        if(maxEntry == null || entry.getValue() > maxEntry.getValue()) {
-          maxEntry = entry;
-        }
-      }
+      Map.Entry<Integer, Double> maxEntry = getMaxEntry(attributesGamma);
+//      Map.Entry<Integer, Double> maxEntry = null;
+//      for(Map.Entry<Integer, Double> entry : attributesGamma.entrySet()) {
+//        if(maxEntry == null || entry.getValue() > maxEntry.getValue()) {
+//          maxEntry = entry;
+//        }
+//      }
       assert maxEntry != null;
       currentGamma = maxEntry.getValue();
       if(currentGamma > currentReduct.getGammaValue() || currentGamma == 0.0) {
@@ -134,6 +134,27 @@ public class AdaptiveQuickReduct {
 
     return currentReduct;
   }
+
+  Map.Entry<Integer, Double> getMaxEntry(Map<Integer, Double> attributesGamma) {
+    Map.Entry<Integer, Double> maxEntry = new AbstractMap.SimpleEntry<>(-1, -1.0);
+
+    for(Map.Entry<Integer, Double> entry : attributesGamma.entrySet()) {
+      if(entry.getValue() > maxEntry.getValue()) {
+        maxEntry = new AbstractMap.SimpleEntry<>(entry);
+      }
+    }
+
+    if(maxEntry.getValue() == 0.0) {
+      Integer[] keySet = attributesGamma.keySet().toArray(new Integer[0]);
+      int randomIndex = (int) (Math.random() * keySet.length);
+      assert randomIndex < keySet.length : "Random index is greater than key set size";
+      int randomKey = keySet[randomIndex];
+      return new AbstractMap.SimpleEntry<>(randomKey, attributesGamma.get(randomKey));
+    }
+
+    return maxEntry;
+  }
+
 
   /**
    * Given a set of information granules referred to a subset of attributes, returns the Degree Dependency value Gamma
