@@ -66,7 +66,7 @@ public class AdaptiveQuickReduct {
       double iGamma = getAttributesDegreeOfDependency(truncatedReduct, iWindow, decisionFeaturesD);
 
       if(iGamma >= previousReduct.getGammaValue()) {
-        System.out.printf("Rimosso l'attributo %d con un nuovo valore di gamma = %f",attributeIndex, iGamma);
+        System.out.printf("Rimosso l'attributo %s con un nuovo valore di gamma = %f", this.datasetInfos.getAttributeLabelByIndex(attributeIndex), iGamma);
         previousReduct.removeFromReductAndUpdateGamma(attributeIndex, iGamma);
         return getReductWithoutUselessAttributes(previousReduct, iWindow, decisionFeaturesD);
       }
