@@ -56,14 +56,17 @@ public class AdaptiveQuickReduct {
       return previousReduct;
     }
 
-    for(int attributeIndex : previousReduct.getReductSet()) {
+    HashSet<Integer> previousReductAttributes = new HashSet<>(previousReduct.getReductSet());
 
-      HashSet<Integer> truncatedReduct = previousReduct.getReductSet();
+    for(int attributeIndex : previousReductAttributes) {
+
+      HashSet<Integer> truncatedReduct = new HashSet<>(previousReduct.getReductSet());
       truncatedReduct.remove(attributeIndex);
 
       double iGamma = getAttributesDegreeOfDependency(truncatedReduct, iWindow, decisionFeaturesD);
 
       if(iGamma >= previousReduct.getGammaValue()) {
+        System.out.printf("Rimosso l'attributo %d con un nuovo valore di gamma = %f",attributeIndex, iGamma);
         previousReduct.removeFromReductAndUpdateGamma(attributeIndex, iGamma);
         return getReductWithoutUselessAttributes(previousReduct, iWindow, decisionFeaturesD);
       }
@@ -103,9 +106,9 @@ public class AdaptiveQuickReduct {
 
     Reduct<Integer> currentReduct = new Reduct<>(previousReduct);
 
-    double currentGamma;
+    double currentGamma = 0.0;
 
-    do {
+    while(currentGamma == currentReduct.getGammaValue() && !currentReduct.hasMaxValue()) {
       HashMap<Integer, HashSet<HashSet<Integer>>> informationGranules = getInformationGranulesAddStep(
               currentReduct.getReductSet(), removedAttributes, iWindow
       );
@@ -124,11 +127,10 @@ public class AdaptiveQuickReduct {
       }
       assert maxEntry != null;
       currentGamma = maxEntry.getValue();
-      if(currentGamma > currentReduct.getGammaValue()) {
+      if(currentGamma > currentReduct.getGammaValue() || currentGamma == 0.0) {
         currentReduct.addToReductAndUpdateGamma(maxEntry.getKey(), currentGamma);
       }
     }
-    while(currentGamma != currentReduct.getGammaValue());
 
     return currentReduct;
   }

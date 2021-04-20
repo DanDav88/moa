@@ -6,6 +6,8 @@ public class Reduct<reductType> {
 
   private final HashSet<reductType> reductSet;
 
+  private static final double MAX_REDUCT_VALUE = 1.0;
+
   private double gammaValue;
 
   public Reduct() {
@@ -54,6 +56,10 @@ public class Reduct<reductType> {
   public boolean isEqual(Reduct<reductType> otherReduct) {
     return this.size() == otherReduct.size() &&
             this.reductSet.containsAll(otherReduct.getReductSet());
+  }
+
+  public boolean hasMaxValue(){
+    return this.getGammaValue() == MAX_REDUCT_VALUE;
   }
 
 }
