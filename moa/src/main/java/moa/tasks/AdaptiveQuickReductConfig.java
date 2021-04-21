@@ -9,13 +9,18 @@ import moa.tasks.adaptive_quick_reduct.model.Window;
 import moa.tasks.adaptive_quick_reduct.model.instance_utils.DatasetInfos;
 import moa.tasks.adaptive_quick_reduct.model.instance_utils.LightInstance;
 import moa.tasks.adaptive_quick_reduct.service.AdaptiveQuickReduct;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.util.ArrayList;
 
 public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
+  private static final Logger logger = LogManager.getLogger(AdaptiveQuickReductConfig.class);
+
   @Override
   protected Object doMainTask(TaskMonitor monitor, ObjectRepository repository) {
+    logger.info("Starting Adaptive Quick Reduct Config");
 
     DatasetInfos datasetInfos = new DatasetInfos(m_instances);
 
@@ -52,6 +57,8 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
       reducts.add(new Reduct<>(currentReduct));
       previousReduct = new Reduct<>(currentReduct);
 
+      logger.info(String.format("Iterazione n. %d, %s", iterationNumber, getReductFormattedString(currentReduct, datasetInfos)));
+
       iWindow = windows.getNextWindow();
       progressBar.setValue(++iterationNumber);
     }
@@ -72,6 +79,14 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
       }
     }
     return attributeScores;
+  }
+
+  private String getReductFormattedString(Reduct<Integer> reduct, DatasetInfos datasetInfos) {
+    String reductElements = reduct.getReductSet().stream()
+            .map(attributeIndex -> String.format("%s", datasetInfos.getAttributeLabelByIndex(attributeIndex)))
+            .reduce("", (prev, succ) -> String.format("%s %s ", prev, succ));
+
+    return String.format("Reduct{reductSet=[%s], gammaValue=%f}", reductElements, reduct.getGammaValue());
   }
 
   /**

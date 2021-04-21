@@ -3,12 +3,14 @@ package moa.tasks.adaptive_quick_reduct.service;
 import moa.tasks.adaptive_quick_reduct.model.Reduct;
 import moa.tasks.adaptive_quick_reduct.model.instance_utils.DatasetInfos;
 import moa.tasks.adaptive_quick_reduct.model.instance_utils.LightInstance;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class AdaptiveQuickReduct {
-
+  private static final Logger logger = LogManager.getLogger(AdaptiveQuickReduct.class);
   DatasetInfos datasetInfos;
 
   public AdaptiveQuickReduct(DatasetInfos datasetInfos) {
@@ -66,7 +68,7 @@ public class AdaptiveQuickReduct {
       double iGamma = getAttributesDegreeOfDependency(truncatedReduct, iWindow, decisionFeaturesD);
 
       if(iGamma >= previousReduct.getGammaValue()) {
-        System.out.printf("Rimosso l'attributo %s con un nuovo valore di gamma = %f", this.datasetInfos.getAttributeLabelByIndex(attributeIndex), iGamma);
+        logger.debug(String.format("Rimosso l'attributo %s con un nuovo valore di gamma = %f", this.datasetInfos.getAttributeLabelByIndex(attributeIndex), iGamma));
         previousReduct.removeFromReductAndUpdateGamma(attributeIndex, iGamma);
         return getReductWithoutUselessAttributes(previousReduct, iWindow, decisionFeaturesD);
       }
@@ -166,6 +168,7 @@ public class AdaptiveQuickReduct {
     int lowerApproximationSize = attributeGranules.parallelStream()
             .filter(granule -> decisionFeaturesD.parallelStream().anyMatch(classFeaturesSet -> classFeaturesSet.containsAll(granule)))
             .map(filteredGranule -> filteredGranule.size())
+            .filter(size -> size > 1)
             .reduce(0, (subtotal, element) -> subtotal + element);
 
     return (double) lowerApproximationSize / (double) universeSizeU;

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="debug" strict="true" name="XMLConfig" packages="org.apache.logging.log4j.test">
+    <Properties>
+        <Property name="filename">moa/target/aqr.log</Property>
+    </Properties>
+    <Appenders>
+        <Appender type="Console" name="STDOUT">
+            <Layout type="PatternLayout" pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"/>
+        </Appender>
+        <Appender type="File" name="File" fileName="${filename}">
+            <Layout type="PatternLayout" pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n" />
+        </Appender>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="AdaptiveQuickReductConfig" level="debug" additivity="false"/>
+        <Logger name="AdaptiveQuickReduct" level="debug" additivity="false"/>
+        <Root level="debug">
+            <AppenderRef ref="File" level="debug"/>
+            <AppenderRef ref="STDOUT" level="info"/>
+        </Root>
+    </Loggers>
+
+</Configuration>
