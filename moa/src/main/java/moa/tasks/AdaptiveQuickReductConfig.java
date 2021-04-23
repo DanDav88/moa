@@ -20,6 +20,7 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
   @Override
   protected Object doMainTask(TaskMonitor monitor, ObjectRepository repository) {
+
     logger.info("Starting Adaptive Quick Reduct Config");
 
     DatasetInfos datasetInfos = new DatasetInfos(m_instances);
@@ -57,7 +58,12 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
       reducts.add(new Reduct<>(currentReduct));
       previousReduct = new Reduct<>(currentReduct);
 
-      logger.info(String.format("Iterazione n. %d, %s", iterationNumber, getReductFormattedString(currentReduct, datasetInfos)));
+      String logString = String.format("Iterazione n. %d, %s", iterationNumber, getReductFormattedString(currentReduct, datasetInfos));
+
+      if(iterationNumber % 100 == 0)
+        System.out.println(logString);
+
+      logger.info(logString);
 
       iWindow = windows.getNextWindow();
       progressBar.setValue(++iterationNumber);

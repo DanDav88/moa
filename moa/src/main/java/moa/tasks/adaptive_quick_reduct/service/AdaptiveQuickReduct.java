@@ -21,6 +21,12 @@ public class AdaptiveQuickReduct {
 
     ArrayList<HashSet<Integer>> decisionFeaturesD = getInstancesBelongingToClass(iWindow);
 
+    double reComputedPreviousReductGamma = getAttributesDegreeOfDependency(previousReduct.getReductSet(), iWindow, decisionFeaturesD);
+
+    logger.debug(String.format("Previous reduct value updated to new window from %f to %f", previousReduct.getGammaValue(), reComputedPreviousReductGamma));
+
+    previousReduct.setGammaValue(reComputedPreviousReductGamma);
+
     Reduct<Integer> reductWithoutUselessAttributes = getReductWithoutUselessAttributes(previousReduct, iWindow, decisionFeaturesD);
 
     HashSet<Integer> removedAttributesFromPreviousReduct = getDiffAttributesBetweenReducts(previousReduct, reductWithoutUselessAttributes);
@@ -81,6 +87,8 @@ public class AdaptiveQuickReduct {
   private double getAttributesDegreeOfDependency(HashSet<Integer> attributes,
                                                  ArrayList<LightInstance> iWindow,
                                                  ArrayList<HashSet<Integer>> decisionFeaturesD) {
+    if(attributes.isEmpty())
+      return 0.0;
     HashSet<HashSet<Integer>> informationGranules = computeInformationGranules(attributes, iWindow);
     return computeGammaValue(informationGranules, decisionFeaturesD, iWindow.size());
   }

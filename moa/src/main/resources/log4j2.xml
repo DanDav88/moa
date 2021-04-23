@@ -14,10 +14,11 @@
 
     <Loggers>
         <Logger name="AdaptiveQuickReductConfig" level="debug" additivity="false"/>
-        <Logger name="AdaptiveQuickReduct" level="debug" additivity="false"/>
-        <Root level="debug">
+        <Logger name="AdaptiveQuickReduct" level="info" additivity="false"/>
+<!--        <Root level="debug">-->
+        <Root level="off">
             <AppenderRef ref="File" level="debug"/>
-            <AppenderRef ref="STDOUT" level="info"/>
+            <AppenderRef ref="STDOUT" level="warn"/>
         </Root>
     </Loggers>
 
