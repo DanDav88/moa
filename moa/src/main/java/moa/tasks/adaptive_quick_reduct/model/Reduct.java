@@ -62,4 +62,11 @@ public class Reduct<reductType> {
     return this.getGammaValue() == MAX_REDUCT_VALUE;
   }
 
+  @Override
+  public String toString() {
+    return "Reduct{" +
+            "reductSet=" + reductSet +
+            ",gammaValue=" + gammaValue +
+            "}";
+  }
 }

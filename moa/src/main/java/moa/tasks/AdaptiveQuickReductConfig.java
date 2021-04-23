@@ -75,7 +75,7 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
     for(int i = 0; i < reductsNumber; i++) {
       for(int j = 0; j < attributesNumber; j++) {
-        attributeScores[i][j] = reducts.get(i).contains(j) ? 1.0 : 0.0;
+        attributeScores[i][j] = reducts.get(i).contains(j) ? reducts.get(i).getGammaValue() : 0.0;
       }
     }
     return attributeScores;

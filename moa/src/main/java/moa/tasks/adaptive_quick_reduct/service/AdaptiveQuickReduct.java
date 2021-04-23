@@ -53,7 +53,6 @@ public class AdaptiveQuickReduct {
   private Reduct<Integer> getReductWithoutUselessAttributes(Reduct<Integer> previousReduct,
                                                             ArrayList<LightInstance> iWindow,
                                                             ArrayList<HashSet<Integer>> decisionFeaturesD) {
-    //TODO gestire il caso che il primo attributo ha valore massimo e
     if(previousReduct.isEmpty() || previousReduct.size() == 1) {
       return previousReduct;
     }
@@ -108,7 +107,7 @@ public class AdaptiveQuickReduct {
 
     Reduct<Integer> currentReduct = new Reduct<>(previousReduct);
 
-    double currentGamma = 0.0;
+    double currentGamma = currentReduct.getGammaValue();
 
     while(currentGamma == currentReduct.getGammaValue() && !currentReduct.hasMaxValue()) {
       HashMap<Integer, HashSet<HashSet<Integer>>> informationGranules = getInformationGranulesAddStep(
@@ -121,15 +120,10 @@ public class AdaptiveQuickReduct {
       ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
       Map.Entry<Integer, Double> maxEntry = getMaxEntry(attributesGamma);
-//      Map.Entry<Integer, Double> maxEntry = null;
-//      for(Map.Entry<Integer, Double> entry : attributesGamma.entrySet()) {
-//        if(maxEntry == null || entry.getValue() > maxEntry.getValue()) {
-//          maxEntry = entry;
-//        }
-//      }
+
       assert maxEntry != null;
       currentGamma = maxEntry.getValue();
-      if(currentGamma > currentReduct.getGammaValue() || currentGamma == 0.0) {
+      if(currentGamma > currentReduct.getGammaValue() || (currentGamma == 0.0 && currentReduct.getGammaValue() == 0.0)) {
         currentReduct.addToReductAndUpdateGamma(maxEntry.getKey(), currentGamma);
       }
     }
@@ -168,7 +162,6 @@ public class AdaptiveQuickReduct {
     int lowerApproximationSize = attributeGranules.parallelStream()
             .filter(granule -> decisionFeaturesD.parallelStream().anyMatch(classFeaturesSet -> classFeaturesSet.containsAll(granule)))
             .map(filteredGranule -> filteredGranule.size())
-            .filter(size -> size > 1)
             .reduce(0, (subtotal, element) -> subtotal + element);
 
     return (double) lowerApproximationSize / (double) universeSizeU;
