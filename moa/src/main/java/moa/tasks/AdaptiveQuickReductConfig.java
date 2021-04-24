@@ -25,6 +25,8 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
     DatasetInfos datasetInfos = new DatasetInfos(m_instances);
 
+    logger.info(String.format("Dataset %s, num instances %d, num classes %d", datasetInfos.getDatasetName(), datasetInfos.getNumInstances(), datasetInfos.getNumClasses()));
+
     ArrayList<LightInstance> myInstances = new ArrayList<>(datasetInfos.getNumInstances());
 
     for(int i = 0; i < datasetInfos.getNumInstances(); i++) {
@@ -33,16 +35,16 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
     Window<LightInstance> windows = new SlidingWindow<>(myInstances, windowSizeOption.getValue(), overlapLengthOption.getValue());
 
+    logger.info(String.format("Window Size %d, windows overlap %d, num iteration %d", windowSizeOption.getValue(), overlapLengthOption.getValue(), windows.getTotalIterationNumber()));
+
     setWindowSize(windowSizeOption.getValue());
     double nanSubstitute = this.nanSubstitute.getValue();
     setNaNSubstitute(nanSubstitute);
 
-    ArrayList<ArrayList<Double>> attributesScores = new ArrayList<>(windows.getTotalIterationNumber());
-
     progressBar.setValue(0);
     progressBar.setMaximum(windows.getTotalIterationNumber());
 
-    int iterationNumber = 0;
+    int iterationNumber = 1;
 
     ArrayList<LightInstance> iWindow = windows.getNextWindow();
 
@@ -58,15 +60,11 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
       reducts.add(new Reduct<>(currentReduct));
       previousReduct = new Reduct<>(currentReduct);
 
-      String logString = String.format("Iterazione n. %d, %s", iterationNumber, getReductFormattedString(currentReduct, datasetInfos));
-
-      if(iterationNumber % 100 == 0)
-        System.out.println(logString);
-
-      logger.info(logString);
+      logger.info(String.format("Iteration n. %d, Obtained Current Reduct %s",
+              iterationNumber, aqr.getReductFormattedString(currentReduct)));
 
       iWindow = windows.getNextWindow();
-      progressBar.setValue(++iterationNumber);
+      progressBar.setValue(iterationNumber++);
     }
 
     return getAttributeScoresFromReducts(reducts, datasetInfos);
@@ -85,14 +83,6 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
       }
     }
     return attributeScores;
-  }
-
-  private String getReductFormattedString(Reduct<Integer> reduct, DatasetInfos datasetInfos) {
-    String reductElements = reduct.getReductSet().stream()
-            .map(attributeIndex -> String.format("%s", datasetInfos.getAttributeLabelByIndex(attributeIndex)))
-            .reduce("", (prev, succ) -> String.format("%s %s ", prev, succ));
-
-    return String.format("Reduct{reductSet=[%s], gammaValue=%f}", reductElements, reduct.getGammaValue());
   }
 
   /**

@@ -11,25 +11,42 @@ import java.util.stream.Collectors;
 
 public class AdaptiveQuickReduct {
   private static final Logger logger = LogManager.getLogger(AdaptiveQuickReduct.class);
-  DatasetInfos datasetInfos;
+  private final DatasetInfos datasetInfos;
+  private int iterationNumber;
 
   public AdaptiveQuickReduct(DatasetInfos datasetInfos) {
     this.datasetInfos = datasetInfos;
+    this.iterationNumber = 0;
+  }
+
+  private void updateIterationNumber() {
+    this.iterationNumber++;
   }
 
   public Reduct<Integer> getReduct(ArrayList<LightInstance> iWindow, Reduct<Integer> previousReduct) {
 
+    this.updateIterationNumber();
+
     ArrayList<HashSet<Integer>> decisionFeaturesD = getInstancesBelongingToClass(iWindow);
+
+    logger.debug(String.format("Iteration n. %d, Computed Decision Features D", this.iterationNumber));
 
     double reComputedPreviousReductGamma = getAttributesDegreeOfDependency(previousReduct.getReductSet(), iWindow, decisionFeaturesD);
 
-    logger.debug(String.format("Previous reduct value updated to new window from %f to %f", previousReduct.getGammaValue(), reComputedPreviousReductGamma));
+    logger.debug(String.format("Iteration n. %d, Previous reduct gamma value updated to new window from %f to %f",
+            this.iterationNumber, previousReduct.getGammaValue(), reComputedPreviousReductGamma));
 
     previousReduct.setGammaValue(reComputedPreviousReductGamma);
 
     Reduct<Integer> reductWithoutUselessAttributes = getReductWithoutUselessAttributes(previousReduct, iWindow, decisionFeaturesD);
 
+    logger.debug(String.format("Iteration n. %d, Obtained Reduct without useless attributes %s",
+            iterationNumber, this.getReductFormattedString(reductWithoutUselessAttributes)));
+
     HashSet<Integer> removedAttributesFromPreviousReduct = getDiffAttributesBetweenReducts(previousReduct, reductWithoutUselessAttributes);
+
+    logger.debug(String.format("Iteration n. %d, Attributes removed from Reduct %s",
+            iterationNumber, removedAttributesFromPreviousReduct));
 
     return getCurrentReduct(reductWithoutUselessAttributes, removedAttributesFromPreviousReduct, decisionFeaturesD, iWindow);
   }
@@ -73,7 +90,8 @@ public class AdaptiveQuickReduct {
       double iGamma = getAttributesDegreeOfDependency(truncatedReduct, iWindow, decisionFeaturesD);
 
       if(iGamma >= previousReduct.getGammaValue()) {
-        logger.debug(String.format("Rimosso l'attributo %s con un nuovo valore di gamma = %f", this.datasetInfos.getAttributeLabelByIndex(attributeIndex), iGamma));
+        logger.debug(String.format("Iteration n. %d, Removed attribute %s. New Gamma value = %f",
+                this.iterationNumber, this.datasetInfos.getAttributeLabelByIndex(attributeIndex), iGamma));
         previousReduct.removeFromReductAndUpdateGamma(attributeIndex, iGamma);
         return getReductWithoutUselessAttributes(previousReduct, iWindow, decisionFeaturesD);
       }
@@ -132,6 +150,8 @@ public class AdaptiveQuickReduct {
       assert maxEntry != null;
       currentGamma = maxEntry.getValue();
       if(currentGamma > currentReduct.getGammaValue() || (currentGamma == 0.0 && currentReduct.getGammaValue() == 0.0)) {
+        logger.debug(String.format("Iteration n. %d, Added attribute %s. New Gamma value = %f",
+                this.iterationNumber, this.datasetInfos.getAttributeLabelByIndex(maxEntry.getKey()), currentGamma));
         currentReduct.addToReductAndUpdateGamma(maxEntry.getKey(), currentGamma);
       }
     }
@@ -233,4 +253,13 @@ public class AdaptiveQuickReduct {
 
     return granules;
   }
+
+  public String getReductFormattedString(Reduct<Integer> reduct) {
+    String reductElements = reduct.getReductSet().stream()
+            .map(attributeIndex -> String.format("%s", this.datasetInfos.getAttributeLabelByIndex(attributeIndex)))
+            .reduce("", (prev, succ) -> String.format("%s %s ", prev, succ));
+
+    return String.format("Reduct{reductSet=[%s], gammaValue=%f}", reductElements, reduct.getGammaValue());
+  }
+
 }

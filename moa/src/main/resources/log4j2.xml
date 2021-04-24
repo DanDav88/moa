@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="debug" strict="true" name="XMLConfig" packages="org.apache.logging.log4j.test">
     <Properties>
-        <Property name="filename">moa/target/aqr.log</Property>
+        <Property name="filename">moa/LOGS/aqr.log</Property>
     </Properties>
     <Appenders>
         <Appender type="Console" name="STDOUT">
@@ -13,12 +13,12 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="AdaptiveQuickReductConfig" level="debug" additivity="false"/>
-        <Logger name="AdaptiveQuickReduct" level="info" additivity="false"/>
-<!--        <Root level="debug">-->
-        <Root level="off">
+        <Logger name="AdaptiveQuickReductConfig" level="info" additivity="false"/>
+        <Logger name="AdaptiveQuickReduct" level="debug" additivity="false"/>
+        <Root level="debug">
+<!--        <Root level="off">-->
             <AppenderRef ref="File" level="debug"/>
-            <AppenderRef ref="STDOUT" level="warn"/>
+            <AppenderRef ref="STDOUT" level="info"/>
         </Root>
     </Loggers>
 
