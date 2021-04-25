@@ -1,5 +1,6 @@
 package moa.tasks.adaptive_quick_reduct.model;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 
 public class SlidingWindow<instanceType> extends Window<instanceType> {
@@ -13,25 +14,24 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
   private boolean areInstancesFinished = false;
   private int totalIterationNumber;
 
-  public SlidingWindow(ArrayList<instanceType> instances) {
-    this(instances, DEFAULT_WINDOW_SIZE, DEFAULT_OVERLAP);
+  public SlidingWindow(int numInstances) {
+    this(numInstances, DEFAULT_WINDOW_SIZE, DEFAULT_OVERLAP);
   }
 
-  public SlidingWindow(ArrayList<instanceType> instances, int windowSize, int overlap) {
-    super(instances);
+  public SlidingWindow(int numInstances, int windowSize, int overlap) {
     assert windowSize > overlap : "Overlap value is greater than Window Size!";
     this.windowSize = windowSize;
     this.overlap = overlap;
     iStart = 0;
     iEnd = windowSize;
 
-    this.setTotalIterationNumber();
+    this.setTotalIterationNumber(numInstances);
   }
 
-  private void setTotalIterationNumber(){
+  private void setTotalIterationNumber(int numInstances) {
     this.totalIterationNumber = 2 + Math.floorDiv(
-            (this.allInstances.size()-windowSize),
-            (this.windowSize-this.overlap)
+            (numInstances - windowSize),
+            (this.windowSize - this.overlap)
     );
   }
 
@@ -41,8 +41,8 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
   }
 
   @Override
-  public ArrayList<instanceType> getNextWindow() {
-    ArrayList<instanceType> instancesToReturn = new ArrayList<>(windowSize);
+  public ArrayList<AbstractMap.SimpleEntry<Integer, instanceType>> getNextWindow(ArrayList<instanceType> allInstances) {
+    ArrayList<AbstractMap.SimpleEntry<Integer, instanceType>> instancesToReturn = new ArrayList<>(windowSize);
 
     if(!areInstancesFinished) {
       int rightLimit;
@@ -56,7 +56,7 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
       }
 
       for(int i = iStart; i < rightLimit; i++) {
-        instancesToReturn.add(allInstances.get(i));
+        instancesToReturn.add(new AbstractMap.SimpleEntry<>(i, allInstances.get(i)));
       }
 
       iStart = rightLimit - overlap;

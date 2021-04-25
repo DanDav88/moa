@@ -1,8 +1,9 @@
 package moa.tasks.adaptive_quick_reduct.service;
 
+import com.yahoo.labs.samoa.instances.Instance;
+import com.yahoo.labs.samoa.instances.Instances;
 import moa.tasks.adaptive_quick_reduct.model.Reduct;
-import moa.tasks.adaptive_quick_reduct.model.instance_utils.DatasetInfos;
-import moa.tasks.adaptive_quick_reduct.model.instance_utils.LightInstance;
+import moa.tasks.adaptive_quick_reduct.model.distance_utils.DistanceCalculatorAbstract;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,19 +12,29 @@ import java.util.stream.Collectors;
 
 public class AdaptiveQuickReduct {
   private static final Logger logger = LogManager.getLogger(AdaptiveQuickReduct.class);
-  private final DatasetInfos datasetInfos;
+  private final Instances datasetInfos;
+  private final int numClasses;
+  private final int numAttributes;
+  private final int classIndex;
+  private final double similarityThreshold;
   private int iterationNumber;
-
-  public AdaptiveQuickReduct(DatasetInfos datasetInfos) {
-    this.datasetInfos = datasetInfos;
-    this.iterationNumber = 0;
-  }
+  private final DistanceCalculatorAbstract distanceCalculator;
 
   private void updateIterationNumber() {
     this.iterationNumber++;
   }
 
-  public Reduct<Integer> getReduct(ArrayList<LightInstance> iWindow, Reduct<Integer> previousReduct) {
+  public AdaptiveQuickReduct(Instances datasetInfos, DistanceCalculatorAbstract distanceCalculator, double similarityThreshold) {
+    this.datasetInfos = datasetInfos;
+    this.numClasses = datasetInfos.numClasses();
+    this.numAttributes = datasetInfos.numAttributes() - 1;
+    this.classIndex = datasetInfos.classIndex();
+    this.similarityThreshold = similarityThreshold;
+    this.distanceCalculator = distanceCalculator;
+    this.iterationNumber = 0;
+  }
+
+  public Reduct<Integer> getReduct(ArrayList<AbstractMap.SimpleEntry<Integer, Instance>> iWindow, Reduct<Integer> previousReduct) {
 
     this.updateIterationNumber();
 
@@ -38,15 +49,17 @@ public class AdaptiveQuickReduct {
 
     previousReduct.setGammaValue(reComputedPreviousReductGamma);
 
+    Reduct<Integer> previousReductCopy = new Reduct<>(previousReduct);
+
     Reduct<Integer> reductWithoutUselessAttributes = getReductWithoutUselessAttributes(previousReduct, iWindow, decisionFeaturesD);
 
     logger.debug(String.format("Iteration n. %d, Obtained Reduct without useless attributes %s",
             iterationNumber, this.getReductFormattedString(reductWithoutUselessAttributes)));
 
-    HashSet<Integer> removedAttributesFromPreviousReduct = getDiffAttributesBetweenReducts(previousReduct, reductWithoutUselessAttributes);
+    HashSet<Integer> removedAttributesFromPreviousReduct = getDiffAttributesBetweenReducts(previousReductCopy, reductWithoutUselessAttributes);
 
-    logger.debug(String.format("Iteration n. %d, Attributes removed from Reduct %s",
-            iterationNumber, removedAttributesFromPreviousReduct));
+    logger.debug(String.format("Iteration n. %d, Attributes removed from Reduct [%s]",
+            iterationNumber, getIndexAttributeString(removedAttributesFromPreviousReduct)));
 
     return getCurrentReduct(reductWithoutUselessAttributes, removedAttributesFromPreviousReduct, decisionFeaturesD, iWindow);
   }
@@ -54,17 +67,18 @@ public class AdaptiveQuickReduct {
   /**
    * Splits instances of the current window into their corresponding class set
    */
-  private ArrayList<HashSet<Integer>> getInstancesBelongingToClass(ArrayList<LightInstance> iWindow) {
+  private ArrayList<HashSet<Integer>> getInstancesBelongingToClass(ArrayList<AbstractMap.SimpleEntry<Integer, Instance>> iWindow) {
 
-    ArrayList<HashSet<Integer>> instToClass = new ArrayList<>(datasetInfos.getNumClasses());
+    ArrayList<HashSet<Integer>> instToClass = new ArrayList<>(this.numClasses);
 
-    for(int i = 0; i < datasetInfos.getNumClasses(); i++) {
-      instToClass.add(new HashSet<>(Math.floorDiv(datasetInfos.getNumInstances(), 2)));
+    for(int i = 0; i < this.numClasses; i++) {
+      instToClass.add(new HashSet<>(Math.floorDiv(iWindow.size(), 2)));
     }
 
-    iWindow.forEach(instance ->
-            instToClass.get(instance.getClassIndex()).add(instance.getInstanceIndex())
-    );
+    for(AbstractMap.SimpleEntry<Integer, Instance> currentInstance : iWindow) {
+      int classIndex = (int) currentInstance.getValue().value(this.classIndex);
+      instToClass.get(classIndex).add(currentInstance.getKey());
+    }
 
     return instToClass;
   }
@@ -74,7 +88,7 @@ public class AdaptiveQuickReduct {
    * become useless in the current iteration.
    */
   private Reduct<Integer> getReductWithoutUselessAttributes(Reduct<Integer> previousReduct,
-                                                            ArrayList<LightInstance> iWindow,
+                                                            ArrayList<AbstractMap.SimpleEntry<Integer, Instance>> iWindow,
                                                             ArrayList<HashSet<Integer>> decisionFeaturesD) {
     if(previousReduct.isEmpty() || previousReduct.size() == 1) {
       return previousReduct;
@@ -91,7 +105,7 @@ public class AdaptiveQuickReduct {
 
       if(iGamma >= previousReduct.getGammaValue()) {
         logger.debug(String.format("Iteration n. %d, Removed attribute %s. New Gamma value = %f",
-                this.iterationNumber, this.datasetInfos.getAttributeLabelByIndex(attributeIndex), iGamma));
+                this.iterationNumber, this.datasetInfos.attribute(attributeIndex).name(), iGamma));
         previousReduct.removeFromReductAndUpdateGamma(attributeIndex, iGamma);
         return getReductWithoutUselessAttributes(previousReduct, iWindow, decisionFeaturesD);
       }
@@ -103,7 +117,7 @@ public class AdaptiveQuickReduct {
    * Given an attributes set and the current window, returns the Degree Dependency value Gamma
    */
   private double getAttributesDegreeOfDependency(HashSet<Integer> attributes,
-                                                 ArrayList<LightInstance> iWindow,
+                                                 ArrayList<AbstractMap.SimpleEntry<Integer, Instance>> iWindow,
                                                  ArrayList<HashSet<Integer>> decisionFeaturesD) {
     if(attributes.isEmpty())
       return 0.0;
@@ -129,13 +143,14 @@ public class AdaptiveQuickReduct {
   private Reduct<Integer> getCurrentReduct(Reduct<Integer> previousReduct,
                                            HashSet<Integer> removedAttributes,
                                            ArrayList<HashSet<Integer>> decisionFeaturesD,
-                                           ArrayList<LightInstance> iWindow) {
+                                           ArrayList<AbstractMap.SimpleEntry<Integer, Instance>> iWindow) {
 
     Reduct<Integer> currentReduct = new Reduct<>(previousReduct);
 
     double currentGamma = currentReduct.getGammaValue();
 
     while(currentGamma == currentReduct.getGammaValue() && !currentReduct.hasMaxValue()) {
+
       HashMap<Integer, HashSet<HashSet<Integer>>> informationGranules = getInformationGranulesAddStep(
               currentReduct.getReductSet(), removedAttributes, iWindow
       );
@@ -147,11 +162,10 @@ public class AdaptiveQuickReduct {
 
       Map.Entry<Integer, Double> maxEntry = getMaxEntry(attributesGamma);
 
-      assert maxEntry != null;
       currentGamma = maxEntry.getValue();
       if(currentGamma > currentReduct.getGammaValue() || (currentGamma == 0.0 && currentReduct.getGammaValue() == 0.0)) {
         logger.debug(String.format("Iteration n. %d, Added attribute %s. New Gamma value = %f",
-                this.iterationNumber, this.datasetInfos.getAttributeLabelByIndex(maxEntry.getKey()), currentGamma));
+                this.iterationNumber, this.datasetInfos.attribute(maxEntry.getKey()).name(), currentGamma));
         currentReduct.addToReductAndUpdateGamma(maxEntry.getKey(), currentGamma);
       }
     }
@@ -159,7 +173,7 @@ public class AdaptiveQuickReduct {
     return currentReduct;
   }
 
-  Map.Entry<Integer, Double> getMaxEntry(Map<Integer, Double> attributesGamma) {
+  private Map.Entry<Integer, Double> getMaxEntry(Map<Integer, Double> attributesGamma) {
     Map.Entry<Integer, Double> maxEntry = new AbstractMap.SimpleEntry<>(-1, -1.0);
 
     for(Map.Entry<Integer, Double> entry : attributesGamma.entrySet()) {
@@ -187,8 +201,8 @@ public class AdaptiveQuickReduct {
                                    ArrayList<HashSet<Integer>> decisionFeaturesD,
                                    int universeSizeU) {
 
-    int lowerApproximationSize = attributeGranules.parallelStream()
-            .filter(granule -> decisionFeaturesD.parallelStream().anyMatch(classFeaturesSet -> classFeaturesSet.containsAll(granule)))
+    int lowerApproximationSize = attributeGranules.stream()
+            .filter(granule -> decisionFeaturesD.stream().anyMatch(classFeaturesSet -> classFeaturesSet.containsAll(granule)))
             .map(filteredGranule -> filteredGranule.size())
             .reduce(0, (subtotal, element) -> subtotal + element);
 
@@ -203,19 +217,18 @@ public class AdaptiveQuickReduct {
    */
   private HashMap<Integer, HashSet<HashSet<Integer>>> getInformationGranulesAddStep(HashSet<Integer> reductElements,
                                                                                     HashSet<Integer> removedAttribute,
-                                                                                    ArrayList<LightInstance> iWindow) {
+                                                                                    ArrayList<AbstractMap.SimpleEntry<Integer, Instance>> iWindow) {
     HashMap<Integer, HashSet<HashSet<Integer>>> informationGranules = new HashMap<>();
 
     HashSet<Integer> attributesTryToAdd = new HashSet<>();
 
-    datasetInfos.getLabelToIndexAttributeDictionary().forEach((label, index) -> {
-      if(!reductElements.contains(index) && !removedAttribute.contains(index)) {
-        attributesTryToAdd.add(index);
-      }
-    });
+    for(int i = 0; i < this.numAttributes; i++) {
+      if(!reductElements.contains(i) && !removedAttribute.contains(i))
+        attributesTryToAdd.add(i);
+    }
 
     attributesTryToAdd.parallelStream().forEach(attributeIndex -> {
-      HashSet<LightInstance> instancesSet = new HashSet<>(iWindow);
+      HashSet<AbstractMap.SimpleEntry<Integer, Instance>> instancesSet = new HashSet<>(iWindow);
       assert instancesSet.size() == iWindow.size() : "getInformationGranules: Instance Set and window have not the same size!";
       HashSet<Integer> attributeSets = new HashSet<>(reductElements);
       attributeSets.add(attributeIndex);
@@ -231,19 +244,33 @@ public class AdaptiveQuickReduct {
   /**
    * Given a subset of attributes, computes the information granules
    */
-  private HashSet<HashSet<Integer>> computeInformationGranules(HashSet<Integer> attributeSet, ArrayList<LightInstance> iWindow) {
+  private HashSet<HashSet<Integer>> computeInformationGranules(HashSet<Integer> attributeSet,
+                                                               ArrayList<AbstractMap.SimpleEntry<Integer, Instance>> iWindow) {
 
     HashSet<HashSet<Integer>> granules = new HashSet<>();
-    HashSet<LightInstance> instancesSet = new HashSet<>(iWindow);
+    HashSet<AbstractMap.SimpleEntry<Integer, Instance>> instancesSet = new HashSet<>(iWindow);
+
+    HashSet<Integer> numericAttributeSet = new HashSet<>();
+    HashSet<Integer> nominalAttributeSet = new HashSet<>();
+
+    for(int attributeIndex : attributeSet) {
+      if(datasetInfos.attribute(attributeIndex).isNominal())
+        nominalAttributeSet.add(attributeIndex);
+      else if(datasetInfos.attribute(attributeIndex).isNumeric())
+        numericAttributeSet.add(attributeIndex);
+      else
+        logger.warn(String.format("Attribute %s is neither Nominal nor Numeric!", datasetInfos.attribute(attributeIndex).name()));
+    }
 
     do {
-      LightInstance iInstance = instancesSet.iterator().next();
+      AbstractMap.SimpleEntry<Integer, Instance> currentInstance = instancesSet.iterator().next();
 
-      Set<LightInstance> sameValueInstances = instancesSet.parallelStream().filter(instance ->
-              instance.hasSameAttributesValue(iInstance, attributeSet)
+      Set<AbstractMap.SimpleEntry<Integer, Instance>> sameValueInstances = instancesSet.stream().filter(iInstance ->
+              this.haveSameNominalAttributeValue(currentInstance.getValue(), iInstance.getValue(), nominalAttributeSet) &&
+                      this.distanceCalculator.computeDistance(currentInstance.getValue(), iInstance.getValue(), numericAttributeSet) <= this.similarityThreshold
       ).collect(Collectors.toSet());
 
-      Set<Integer> sameValueInstancesIndex = sameValueInstances.parallelStream().map(LightInstance::getInstanceIndex).collect(Collectors.toSet());
+      Set<Integer> sameValueInstancesIndex = sameValueInstances.stream().map(instance -> instance.getKey()).collect(Collectors.toSet());
 
       granules.add(new HashSet<>(sameValueInstancesIndex));
 
@@ -254,12 +281,21 @@ public class AdaptiveQuickReduct {
     return granules;
   }
 
+  public boolean haveSameNominalAttributeValue(Instance currentInstance, Instance iInstance, HashSet<Integer> attributeSet) {
+    return attributeSet.stream().allMatch(attributeIndex ->
+            currentInstance.value(attributeIndex) == iInstance.value(attributeIndex)
+    );
+  }
+
   public String getReductFormattedString(Reduct<Integer> reduct) {
-    String reductElements = reduct.getReductSet().stream()
-            .map(attributeIndex -> String.format("%s", this.datasetInfos.getAttributeLabelByIndex(attributeIndex)))
-            .reduce("", (prev, succ) -> String.format("%s %s ", prev, succ));
+    String reductElements = getIndexAttributeString(reduct.getReductSet());
 
     return String.format("Reduct{reductSet=[%s], gammaValue=%f}", reductElements, reduct.getGammaValue());
   }
 
+  public String getIndexAttributeString(HashSet<Integer> attributeIndexSet) {
+    return attributeIndexSet.stream()
+            .map(attributeIndex -> String.format("%s", this.datasetInfos.attribute(attributeIndex).name()))
+            .reduce("", (prev, succ) -> String.format("%s %s ", prev, succ));
+  }
 }

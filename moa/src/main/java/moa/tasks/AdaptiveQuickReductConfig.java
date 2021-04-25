@@ -2,16 +2,21 @@ package moa.tasks;
 
 import com.github.javacliparser.FloatOption;
 import com.github.javacliparser.IntOption;
+import com.github.javacliparser.MultiChoiceOption;
+import com.yahoo.labs.samoa.instances.Instance;
+import com.yahoo.labs.samoa.instances.Instances;
 import moa.core.ObjectRepository;
 import moa.tasks.adaptive_quick_reduct.model.Reduct;
 import moa.tasks.adaptive_quick_reduct.model.SlidingWindow;
 import moa.tasks.adaptive_quick_reduct.model.Window;
-import moa.tasks.adaptive_quick_reduct.model.instance_utils.DatasetInfos;
-import moa.tasks.adaptive_quick_reduct.model.instance_utils.LightInstance;
+import moa.tasks.adaptive_quick_reduct.model.distance_utils.DistanceCalculatorAbstract;
+import moa.tasks.adaptive_quick_reduct.model.distance_utils.EuclideanDistanceCalculator;
+import moa.tasks.adaptive_quick_reduct.model.distance_utils.ManhattanDistanceCalculator;
 import moa.tasks.adaptive_quick_reduct.service.AdaptiveQuickReduct;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 
 public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
@@ -21,21 +26,24 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
   @Override
   protected Object doMainTask(TaskMonitor monitor, ObjectRepository repository) {
 
-    logger.info("Starting Adaptive Quick Reduct Config");
+    logger.info("Adaptive Quick Reduct Config");
 
-    DatasetInfos datasetInfos = new DatasetInfos(m_instances);
+    logger.info(String.format("Dataset %s, num instances %d, num classes %d",
+            m_instances.getRelationName(), m_instances.numInstances(), m_instances.numClasses()));
 
-    logger.info(String.format("Dataset %s, num instances %d, num classes %d", datasetInfos.getDatasetName(), datasetInfos.getNumInstances(), datasetInfos.getNumClasses()));
+    Window<Instance> windows = new SlidingWindow<>(m_instances.numInstances(), windowSizeOption.getValue(), overlapLengthOption.getValue());
+    double similarityThreshold = this.similarityThreshold.getValue();
 
-    ArrayList<LightInstance> myInstances = new ArrayList<>(datasetInfos.getNumInstances());
+    DistanceCalculatorAbstract distanceCalculator;
 
-    for(int i = 0; i < datasetInfos.getNumInstances(); i++) {
-      myInstances.add(new LightInstance(m_instances.getInstances().get(i), i));
-    }
+    if (this.distanceOption.getChosenLabel().equals(ManhattanDistanceCalculator.getClassName()))
+      distanceCalculator = new ManhattanDistanceCalculator();
+    else
+      distanceCalculator = new EuclideanDistanceCalculator();
 
-    Window<LightInstance> windows = new SlidingWindow<>(myInstances, windowSizeOption.getValue(), overlapLengthOption.getValue());
-
-    logger.info(String.format("Window Size %d, windows overlap %d, num iteration %d", windowSizeOption.getValue(), overlapLengthOption.getValue(), windows.getTotalIterationNumber()));
+    logger.info(String.format("Window Size %d, windows overlap %d, num iteration %d, distance type %s, similarity threshold %f",
+            windowSizeOption.getValue(), overlapLengthOption.getValue(), windows.getTotalIterationNumber(),
+            distanceCalculator.getClass().getCanonicalName(), similarityThreshold));
 
     setWindowSize(windowSizeOption.getValue());
     double nanSubstitute = this.nanSubstitute.getValue();
@@ -46,13 +54,14 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
     int iterationNumber = 1;
 
-    ArrayList<LightInstance> iWindow = windows.getNextWindow();
+    ArrayList<AbstractMap.SimpleEntry<Integer,Instance>> iWindow = windows.getNextWindow(m_instances.getInstances());
 
     Reduct<Integer> previousReduct = new Reduct<>();
     ArrayList<Reduct<Integer>> reducts = new ArrayList<>(windows.getTotalIterationNumber());
 
-    AdaptiveQuickReduct aqr = new AdaptiveQuickReduct(datasetInfos);
+    AdaptiveQuickReduct aqr = new AdaptiveQuickReduct(m_instances, distanceCalculator, similarityThreshold);
 
+    logger.info("Adaptive Quick Reduct Config - Starting Computation");
     while(!iWindow.isEmpty()) {
 
       Reduct<Integer> currentReduct = aqr.getReduct(iWindow, previousReduct);
@@ -63,23 +72,23 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
       logger.info(String.format("Iteration n. %d, Obtained Current Reduct %s",
               iterationNumber, aqr.getReductFormattedString(currentReduct)));
 
-      iWindow = windows.getNextWindow();
+      iWindow = windows.getNextWindow(m_instances.getInstances());
       progressBar.setValue(iterationNumber++);
     }
-
-    return getAttributeScoresFromReducts(reducts, datasetInfos);
+    logger.info("Adaptive Quick Reduct Config - Ending Computation");
+    return getAttributeScoresFromReducts(reducts, m_instances);
   }
 
 
-  private double[][] getAttributeScoresFromReducts(ArrayList<Reduct<Integer>> reducts, DatasetInfos datasetInfos) {
+  private double[][] getAttributeScoresFromReducts(ArrayList<Reduct<Integer>> reducts, Instances datasetInfos) {
     int reductsNumber = reducts.size();
-    int attributesNumber = datasetInfos.getNumAttributes();
+    int attributesNumber = datasetInfos.numAttributes() - 1;
 
     double[][] attributeScores = new double[reductsNumber][attributesNumber];
 
     for(int i = 0; i < reductsNumber; i++) {
       for(int j = 0; j < attributesNumber; j++) {
-        attributeScores[i][j] = reducts.get(i).contains(j) ? reducts.get(i).getGammaValue() : 0.0;
+        attributeScores[i][j] = reducts.get(i).contains(j) ? 1.0 : 0.0;
       }
     }
     return attributeScores;
@@ -94,6 +103,16 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
           "NaNSubstitute", 'u',
           "When scores of feature importance are NaN, NaN will be replaced by NaNSubstitute shown in line graph.", 0,
           Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+
+  public FloatOption similarityThreshold = new FloatOption(
+          "similarityThreshold", 't',
+          "Similarity threshold between instances", 0.0,
+          Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+
+  public MultiChoiceOption distanceOption = new MultiChoiceOption("DistanceType", 'd',"Define the distance type between instances",
+          new String[]{EuclideanDistanceCalculator.getClassName(), ManhattanDistanceCalculator.getClassName()},
+          new String[]{EuclideanDistanceCalculator.getDESCRIPTION(), ManhattanDistanceCalculator.getDESCRIPTION()},
+          0);
 
   @Override
   public String getPurposeString() {
