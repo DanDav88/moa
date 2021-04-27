@@ -148,8 +148,12 @@ public class AdaptiveQuickReduct {
     Reduct<Integer> currentReduct = new Reduct<>(previousReduct);
 
     double currentGamma = currentReduct.getGammaValue();
+    double previousGamma = -1.0;
 
-    while(currentGamma == currentReduct.getGammaValue() && !currentReduct.hasMaxValue()) {
+    while(currentGamma == currentReduct.getGammaValue() && previousGamma != currentGamma && !currentReduct.hasMaxValue()) {
+
+      if(currentGamma > 0.0)
+        previousGamma = currentGamma;
 
       HashMap<Integer, HashSet<HashSet<Integer>>> informationGranules = getInformationGranulesAddStep(
               currentReduct.getReductSet(), removedAttributes, iWindow
@@ -163,6 +167,8 @@ public class AdaptiveQuickReduct {
       Map.Entry<Integer, Double> maxEntry = getMaxEntry(attributesGamma);
 
       currentGamma = maxEntry.getValue();
+      logger.debug(String.format("Iteration n. %d, previous Gamma found = %f -  max Gamma found = %f - currentGamma%f",
+              this.iterationNumber,previousGamma, currentGamma, currentReduct.getGammaValue()));
       if(currentGamma > currentReduct.getGammaValue() || (currentGamma == 0.0 && currentReduct.getGammaValue() == 0.0)) {
         logger.debug(String.format("Iteration n. %d, Added attribute %s. New Gamma value = %f",
                 this.iterationNumber, this.datasetInfos.attribute(maxEntry.getKey()).name(), currentGamma));
