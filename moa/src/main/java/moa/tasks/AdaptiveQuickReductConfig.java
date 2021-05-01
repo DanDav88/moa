@@ -1,5 +1,6 @@
 package moa.tasks;
 
+import com.github.javacliparser.FlagOption;
 import com.github.javacliparser.FloatOption;
 import com.github.javacliparser.IntOption;
 import com.github.javacliparser.MultiChoiceOption;
@@ -16,6 +17,10 @@ import moa.tasks.adaptive_quick_reduct.service.AdaptiveQuickReduct;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 
@@ -36,14 +41,16 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
     DistanceCalculatorAbstract distanceCalculator;
 
-    if (this.distanceOption.getChosenLabel().equals(ManhattanDistanceCalculator.getClassName()))
+    if(this.distanceOption.getChosenLabel().equals(ManhattanDistanceCalculator.getClassName()))
       distanceCalculator = new ManhattanDistanceCalculator();
     else
       distanceCalculator = new EuclideanDistanceCalculator();
 
-    logger.info(String.format("Window Size %d, windows overlap %d, num iteration %d, distance type %s, similarity threshold %f",
+    Boolean saveCSV = saveCsvOption.isSet();
+
+    logger.info(String.format("Window Size %d, windows overlap %d, num iteration %d, distance type %s, similarity threshold %f, export CSV = %s",
             windowSizeOption.getValue(), overlapLengthOption.getValue(), windows.getTotalIterationNumber(),
-            distanceCalculator.getClass().getCanonicalName(), similarityThreshold));
+            distanceCalculator.getClass().getCanonicalName(), similarityThreshold, saveCSV));
 
     setWindowSize(windowSizeOption.getValue());
     double nanSubstitute = this.nanSubstitute.getValue();
@@ -54,7 +61,7 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
     int iterationNumber = 1;
 
-    ArrayList<AbstractMap.SimpleEntry<Integer,Instance>> iWindow = windows.getNextWindow(m_instances.getInstances());
+    ArrayList<AbstractMap.SimpleEntry<Integer, Instance>> iWindow = windows.getNextWindow(m_instances.getInstances());
 
     Reduct<Integer> previousReduct = new Reduct<>();
     ArrayList<Reduct<Integer>> reducts = new ArrayList<>(windows.getTotalIterationNumber());
@@ -76,9 +83,44 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
       progressBar.setValue(iterationNumber++);
     }
     logger.info("Adaptive Quick Reduct Config - Ending Computation");
-    return getAttributeScoresFromReducts(reducts, m_instances);
+
+    double[][] scores = getAttributeScoresFromReducts(reducts, m_instances);
+
+    if(saveCSV)
+      exportCSV(scores,m_instances);
+
+    return scores;
   }
 
+  private void exportCSV(double[][] scores, Instances datasetInfos) {
+    String format = "yyyyMMdd_HH_mm_ss";
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+
+    String filename = String.format("moa/CSV/%s_%s.csv",
+            String.join("_",datasetInfos.getRelationName().split(" ")),
+            ZonedDateTime.now().format(formatter));
+    try {
+      FileWriter writer = new FileWriter(filename);
+      String[] attributes = new String[datasetInfos.numAttributes() - 1];
+      for(int i = 0; i < datasetInfos.numAttributes() - 1; i++) {
+        attributes[i] = datasetInfos.attribute(i).name();
+      }
+      String header = String.join(",", attributes);
+      writer.write(header + System.lineSeparator());
+
+      for (int row = 0; row < scores.length; row++){
+        String[] values = new String[scores[row].length];
+        for (int col = 0; col< scores[row].length; col++)
+          values[col] = String.valueOf(scores[row][col]);
+
+        writer.write(String.join(",", values) + System.lineSeparator());
+      }
+      writer.close();
+      logger.info(String.format("Exported %s ",filename));
+    } catch(IOException e) {
+      e.printStackTrace();
+    }
+  }
 
   private double[][] getAttributeScoresFromReducts(ArrayList<Reduct<Integer>> reducts, Instances datasetInfos) {
     int reductsNumber = reducts.size();
@@ -109,14 +151,15 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
           "Similarity threshold between instances", 0.0,
           Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
 
-  public MultiChoiceOption distanceOption = new MultiChoiceOption("DistanceType", 'd',"Define the distance type between instances",
+  public MultiChoiceOption distanceOption = new MultiChoiceOption("DistanceType", 'd', "Define the distance type between instances",
           new String[]{EuclideanDistanceCalculator.getClassName(), ManhattanDistanceCalculator.getClassName()},
           new String[]{EuclideanDistanceCalculator.getDESCRIPTION(), ManhattanDistanceCalculator.getDESCRIPTION()},
           0);
+  public FlagOption saveCsvOption = new FlagOption("ExportCSV", 's', "Define if export csv file with scores");
 
   @Override
   public String getPurposeString() {
-    return "This is a hello world task. returns not real feature scores.";
+    return "This is the implementation of Adaptive Quick Reduct Algorithm";
   }
 
   @Override

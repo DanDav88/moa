@@ -276,7 +276,7 @@ public class AdaptiveQuickReduct {
                       this.distanceCalculator.computeDistance(currentInstance.getValue(), iInstance.getValue(), numericAttributeSet) <= this.similarityThreshold
       ).collect(Collectors.toSet());
 
-      Set<Integer> sameValueInstancesIndex = sameValueInstances.stream().map(instance -> instance.getKey()).collect(Collectors.toSet());
+      Set<Integer> sameValueInstancesIndex = sameValueInstances.stream().sequential().map(instance -> instance.getKey()).collect(Collectors.toSet());
 
       granules.add(new HashSet<>(sameValueInstancesIndex));
 
