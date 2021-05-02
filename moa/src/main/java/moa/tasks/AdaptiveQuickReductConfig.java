@@ -5,7 +5,6 @@ import com.github.javacliparser.FloatOption;
 import com.github.javacliparser.IntOption;
 import com.github.javacliparser.MultiChoiceOption;
 import com.yahoo.labs.samoa.instances.Instance;
-import com.yahoo.labs.samoa.instances.Instances;
 import moa.core.ObjectRepository;
 import moa.tasks.adaptive_quick_reduct.model.Reduct;
 import moa.tasks.adaptive_quick_reduct.model.SlidingWindow;
@@ -17,12 +16,11 @@ import moa.tasks.adaptive_quick_reduct.service.AdaptiveQuickReduct;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+
+import static moa.tasks.adaptive_quick_reduct.utils.Utils.*;
 
 public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
@@ -86,54 +84,15 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
 
     double[][] scores = getAttributeScoresFromReducts(reducts, m_instances);
 
-    if(saveCSV)
-      exportCSV(scores,m_instances);
+    if(saveCSV) {
+      String filename = String.format("moa/CSV/%s_%s.csv",
+              String.join("_",m_instances.getRelationName().split(" ")),
+              ZonedDateTime.now().format(formatter_yyyyMMdd_HH_mm_ss));
+      exportCSV(scores, m_instances, filename);
+      logger.info(String.format("Exported %s ",filename));
+    }
 
     return scores;
-  }
-
-  private void exportCSV(double[][] scores, Instances datasetInfos) {
-    String format = "yyyyMMdd_HH_mm_ss";
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
-
-    String filename = String.format("moa/CSV/%s_%s.csv",
-            String.join("_",datasetInfos.getRelationName().split(" ")),
-            ZonedDateTime.now().format(formatter));
-    try {
-      FileWriter writer = new FileWriter(filename);
-      String[] attributes = new String[datasetInfos.numAttributes() - 1];
-      for(int i = 0; i < datasetInfos.numAttributes() - 1; i++) {
-        attributes[i] = datasetInfos.attribute(i).name();
-      }
-      String header = String.join(",", attributes);
-      writer.write(header + System.lineSeparator());
-
-      for (int row = 0; row < scores.length; row++){
-        String[] values = new String[scores[row].length];
-        for (int col = 0; col< scores[row].length; col++)
-          values[col] = String.valueOf(scores[row][col]);
-
-        writer.write(String.join(",", values) + System.lineSeparator());
-      }
-      writer.close();
-      logger.info(String.format("Exported %s ",filename));
-    } catch(IOException e) {
-      e.printStackTrace();
-    }
-  }
-
-  private double[][] getAttributeScoresFromReducts(ArrayList<Reduct<Integer>> reducts, Instances datasetInfos) {
-    int reductsNumber = reducts.size();
-    int attributesNumber = datasetInfos.numAttributes() - 1;
-
-    double[][] attributeScores = new double[reductsNumber][attributesNumber];
-
-    for(int i = 0; i < reductsNumber; i++) {
-      for(int j = 0; j < attributesNumber; j++) {
-        attributeScores[i][j] = reducts.get(i).contains(j) ? 1.0 : 0.0;
-      }
-    }
-    return attributeScores;
   }
 
   /**
