@@ -15,6 +15,7 @@
     <Loggers>
         <Logger name="AdaptiveQuickReductConfig" level="info" additivity="false"/>
         <Logger name="AdaptiveQuickReduct" level="debug" additivity="false"/>
+        <Logger name="AdaptiveQuickReductTest" level="debug" additivity="false"/>
         <Root level="debug">
             <AppenderRef ref="File" level="debug"/>
             <AppenderRef ref="STDOUT" level="info"/>
