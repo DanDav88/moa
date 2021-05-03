@@ -1,10 +1,14 @@
 package moa.tasks.adaptive_quick_reduct.utils;
 
+import com.yahoo.labs.samoa.instances.ArffLoader;
 import com.yahoo.labs.samoa.instances.Instances;
+import com.yahoo.labs.samoa.instances.WekaToSamoaInstanceConverter;
 import moa.tasks.adaptive_quick_reduct.model.Reduct;
 
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
@@ -36,10 +40,10 @@ public class Utils {
       String header = String.join(",", attributes);
       writer.write(header + System.lineSeparator());
 
-      for (int row = 0; row < scores.length; row++){
-        String[] values = new String[scores[row].length];
-        for (int col = 0; col< scores[row].length; col++)
-          values[col] = String.valueOf(scores[row][col]);
+      for(double[] scoreRow : scores) {
+        String[] values = new String[scoreRow.length];
+        for(int col = 0; col < scoreRow.length; col++)
+          values[col] = String.valueOf(scoreRow[col]);
 
         writer.write(String.join(",", values) + System.lineSeparator());
       }
@@ -49,5 +53,18 @@ public class Utils {
     }
   }
 
+  public static Instances readInstances(String fileName) {
+    Reader reader;
+    Instances instances = null;
+    try {
+      reader = new java.io.BufferedReader(new FileReader(fileName));
+      weka.core.Instances wekaInstances = new weka.core.Instances(reader);
+      WekaToSamoaInstanceConverter m_wekaToSamoaInstanceConverter = new WekaToSamoaInstanceConverter();
+      instances = m_wekaToSamoaInstanceConverter.samoaInstances(wekaInstances);
+    } catch(IOException e) {
+      e.printStackTrace();
+    }
+    return instances;
+  }
 
 }
