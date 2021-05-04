@@ -60,6 +60,7 @@ public class Utils {
       reader = new java.io.BufferedReader(new FileReader(fileName));
       weka.core.Instances wekaInstances = new weka.core.Instances(reader);
       WekaToSamoaInstanceConverter m_wekaToSamoaInstanceConverter = new WekaToSamoaInstanceConverter();
+      wekaInstances.setClassIndex(wekaInstances.numAttributes()-1);
       instances = m_wekaToSamoaInstanceConverter.samoaInstances(wekaInstances);
     } catch(IOException e) {
       e.printStackTrace();
