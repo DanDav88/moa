@@ -1,6 +1,5 @@
 package moa.tasks.adaptive_quick_reduct.utils;
 
-import com.yahoo.labs.samoa.instances.ArffLoader;
 import com.yahoo.labs.samoa.instances.Instances;
 import com.yahoo.labs.samoa.instances.WekaToSamoaInstanceConverter;
 import moa.tasks.adaptive_quick_reduct.model.Reduct;
