@@ -29,7 +29,7 @@ public class Utils {
     return attributeScores;
   }
 
-  public static void exportCSV(double[][] scores, Instances datasetInfos, String filename) {
+  public static void exportAttributeScoresCSV(double[][] scores, Instances datasetInfos, String filename) {
     try {
       FileWriter writer = new FileWriter(filename);
       String[] attributes = new String[datasetInfos.numAttributes() - 1];

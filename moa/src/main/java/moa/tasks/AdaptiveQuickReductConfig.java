@@ -88,7 +88,7 @@ public class AdaptiveQuickReductConfig extends FeatureImportanceAbstract {
       String filename = String.format("moa/CSV/%s_%s.csv",
               String.join("_",m_instances.getRelationName().split(" ")),
               ZonedDateTime.now().format(formatter_yyyyMMdd_HH_mm_ss));
-      exportCSV(scores, m_instances, filename);
+      exportAttributeScoresCSV(scores, m_instances, filename);
       logger.info(String.format("Exported %s ",filename));
     }
 

@@ -11,6 +11,8 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
   private final int overlap;
   private int iStart;
   private int iEnd;
+  private int currentStart;
+  private int currentEnd;
   private boolean areInstancesFinished = false;
   private int totalIterationNumber;
 
@@ -55,6 +57,9 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
         this.areInstancesFinished = true;
       }
 
+      currentStart = iStart;
+      currentEnd = rightLimit;
+
       for(int i = iStart; i < rightLimit; i++) {
         instancesToReturn.add(new AbstractMap.SimpleEntry<>(i, allInstances.get(i)));
       }
@@ -65,4 +70,14 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
 
     return instancesToReturn;
   }
+
+  @Override
+  public ArrayList<AbstractMap.SimpleEntry<Integer, instanceType>> getCurrentWindow(ArrayList<instanceType> allInstances) {
+    ArrayList<AbstractMap.SimpleEntry<Integer, instanceType>> instancesToReturn = new ArrayList<>(windowSize);
+    for(int i = currentStart; i < currentEnd; i++) {
+      instancesToReturn.add(new AbstractMap.SimpleEntry<>(i, allInstances.get(i)));
+    }
+    return instancesToReturn;
+  }
+
 }
