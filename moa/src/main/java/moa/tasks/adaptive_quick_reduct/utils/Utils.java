@@ -10,6 +10,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Utils {
   private static final String format = "yyyyMMdd_HH_mm_ss";
@@ -52,6 +55,47 @@ public class Utils {
     }
   }
 
+  public static void exportAccuraciesCSV(ArrayList<Double> accuracies, String filename) {
+    try {
+      FileWriter writer = new FileWriter(filename);
+
+      String header = "Iteration_Number,Accuracy";
+      writer.write(header + System.lineSeparator());
+
+      for(int i = 0; i < accuracies.size(); i++) {
+        String lineToWrite = String.format("%d,%s", i, accuracies.get(i));
+        writer.write(lineToWrite + System.lineSeparator());
+      }
+      writer.close();
+    } catch(IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static HashSet<String> getAttributesToRemove(Instances instances, HashSet<Integer> currentReduct) {
+    int numAttributes = instances.numAttributes() -1;
+    HashSet<Integer> fullSetAttributes = new HashSet<>(numAttributes);
+
+    for(int i = 0; i < numAttributes; i++) {
+      fullSetAttributes.add(i);
+    }
+    fullSetAttributes.removeAll(currentReduct);
+
+    Set<String> attributesName = fullSetAttributes.stream().map(attributeIndex -> instances.attribute(attributeIndex).name()
+    ).collect(Collectors.toSet());
+
+    return (HashSet<String>) attributesName;
+  }
+
+  public static void removeAttributesFromInstances(Instances instances, HashSet<Integer> currentReduct){
+    HashSet<String> indexAttributesToRemove = getAttributesToRemove(instances, currentReduct);
+
+    indexAttributesToRemove.forEach(attributeName -> {
+      int attributeIndex = instances.getAttributeIndexByName(attributeName);
+      instances.deleteAttributeAt(attributeIndex);
+    });
+  }
+
   public static Instances readInstances(String fileName) {
     Reader reader;
     Instances instances = null;
@@ -59,7 +103,7 @@ public class Utils {
       reader = new java.io.BufferedReader(new FileReader(fileName));
       weka.core.Instances wekaInstances = new weka.core.Instances(reader);
       WekaToSamoaInstanceConverter m_wekaToSamoaInstanceConverter = new WekaToSamoaInstanceConverter();
-      wekaInstances.setClassIndex(wekaInstances.numAttributes()-1);
+      wekaInstances.setClassIndex(wekaInstances.numAttributes() - 1);
       instances = m_wekaToSamoaInstanceConverter.samoaInstances(wekaInstances);
     } catch(IOException e) {
       e.printStackTrace();
