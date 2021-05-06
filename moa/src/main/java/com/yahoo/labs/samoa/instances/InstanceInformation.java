@@ -231,4 +231,8 @@ public class InstanceInformation implements Serializable {
 		
 	}
 
+    public int getAttributeIndexByName(String attributeName) {
+        return this.attributesInformation.getAttributeIndexByName(attributeName);
+    }
+
 }

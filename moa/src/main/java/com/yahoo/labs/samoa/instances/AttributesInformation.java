@@ -232,6 +232,14 @@ public class AttributesInformation implements Serializable {
         }
     }
 
+    public int getAttributeIndexByName(String attributeName) {
+        for(int i = 0; i < attributes.length; i++) {
+            if(attributes[i].name().equals(attributeName))
+                return i;
+        }
+        return -1;
+    }
+
     /* DENSE
     public void deleteAttributeAt(Integer position) {
         if ((position < 0) || (position >= attributes.size())) {

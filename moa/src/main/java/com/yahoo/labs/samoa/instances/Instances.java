@@ -680,4 +680,8 @@ public class Instances implements Serializable {
             }
         }
     }
+
+    public int getAttributeIndexByName(String attributeName) {
+        return this.instanceInformation.getAttributeIndexByName(attributeName);
+    }
 }
