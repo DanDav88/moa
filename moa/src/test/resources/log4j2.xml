@@ -7,7 +7,7 @@
         <RollingFile name="File" filePattern="moa/LOGS/aqr_%d{yyyyMMddHHmmssSSS}_%i.log" immediateFlush="true">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"/>
             <Policies>
-                <SizeBasedTriggeringPolicy size="64 MB"/>
+                <SizeBasedTriggeringPolicy size="250 MB"/>
                 <OnStartupTriggeringPolicy/>
             </Policies>
         </RollingFile>
