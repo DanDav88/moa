@@ -80,4 +80,8 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
     return instancesToReturn;
   }
 
+  @Override
+  public String toString() {
+    return String.format("SlidingWindow_ws_%d_wo_%d",this.windowSize,this.overlap);
+  }
 }
