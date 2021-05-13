@@ -62,10 +62,10 @@ public class AdaptiveQuickReductTest {
       for(int windowSize : windowSizes) {
         for(float overlapPercent : overlapPercents) {
           int overlap = (int) (windowSize * overlapPercent);
-          kNeighbors.parallelStream().forEach(kNeighbor -> {
+          runBayesClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD);
+          for(Integer kNeighbor : kNeighbors) {
             runKNNClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD, kNeighbor, windowSize);
-            runBayesClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD);
-          });
+          }
         }
       }
     }
