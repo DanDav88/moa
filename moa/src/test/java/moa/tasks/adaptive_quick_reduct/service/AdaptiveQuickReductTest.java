@@ -99,7 +99,7 @@ public class AdaptiveQuickReductTest {
     AbstractClassifier classifier = new kNN(Optional.of(kN), Optional.of(storedInstances));
 
     ArrayList<Double> accuracies = runClassificationStandard(instances, windowsStd, classifier);
-    ArrayList<Double> accuraciesAQR = runClassificationAQR(instances, aqr, windowsAqr, classifierAQR);
+    ArrayList<Double> accuraciesAQR = runClassificationAQR(instances, aqr, windowsAqr, classifierAQR, false);
 
     String relationName = String.join("_", instances.getRelationName().split(" "));
     String timeStamp = ZonedDateTime.now().format(formatter_yyyyMMdd_HH_mm_ss);
@@ -131,7 +131,7 @@ public class AdaptiveQuickReductTest {
     classifier.resetLearningImpl();
 
     ArrayList<Double> accuracies = runClassificationStandard(instances, windowsStd, classifier);
-    ArrayList<Double> accuraciesAQR = runClassificationAQR(instances, aqr, windowsAqr, classifierAQR);
+    ArrayList<Double> accuraciesAQR = runClassificationAQR(instances, aqr, windowsAqr, classifierAQR, true);
 
     String relationName = String.join("_", instances.getRelationName().split(" "));
     String timeStamp = ZonedDateTime.now().format(formatter_yyyyMMdd_HH_mm_ss);
@@ -146,7 +146,10 @@ public class AdaptiveQuickReductTest {
     logger.info(String.format("Exported %s ", filenameAccuracies));
   }
 
-  private static ArrayList<Double> runClassificationAQR(Instances instances, AdaptiveQuickReduct aqr, Window<Instance> windows, AbstractClassifier classifier) {
+  private static ArrayList<Double> runClassificationAQR(Instances instances,
+                                                        AdaptiveQuickReduct aqr, Window<Instance> windows,
+                                                        AbstractClassifier classifier,
+                                                        boolean saveScores) {
 
     int iterationNumber = 1;
 
@@ -213,13 +216,15 @@ public class AdaptiveQuickReductTest {
 
     logger.info(classificationString + "- Ending Computation");
 
-    double[][] scores = getAttributeScoresFromReducts(reducts, instances);
+    if(saveScores) {
+      double[][] scores = getAttributeScoresFromReducts(reducts, instances);
 
-    String relationName = String.join("_", instances.getRelationName().split(" "));
-    String timestamp = ZonedDateTime.now().format(formatter_yyyyMMdd_HH_mm_ss);
-    String filenameScores = String.format("moa/CSV/Scores/Scores_%s_%s_%s.csv", relationName, windows, timestamp);
-    exportAttributeScoresCSV(scores, instances, filenameScores);
-    logger.info(String.format("Exported %s ", filenameScores));
+      String relationName = String.join("_", instances.getRelationName().split(" "));
+      String timestamp = ZonedDateTime.now().format(formatter_yyyyMMdd_HH_mm_ss);
+      String filenameScores = String.format("moa/CSV/Scores/Scores_%s_%s_%s.csv", relationName, windows, timestamp);
+      exportAttributeScoresCSV(scores, instances, filenameScores);
+      logger.info(String.format("Exported %s ", filenameScores));
+    }
 
     return accuracies;
   }
