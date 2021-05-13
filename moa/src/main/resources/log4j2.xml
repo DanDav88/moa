@@ -7,7 +7,7 @@
         <RollingFile name="File" filePattern="moa/LOGS/aqr_%d{yyyyMMddHHmmssSSS}_%i.log" immediateFlush="true">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"/>
             <Policies>
-                <SizeBasedTriggeringPolicy size="64 MB"/>
+                <SizeBasedTriggeringPolicy size="512 MB"/>
                 <OnStartupTriggeringPolicy/>
             </Policies>
         </RollingFile>
@@ -15,6 +15,8 @@
     <Loggers>
         <Logger name="AdaptiveQuickReductConfig" level="info" additivity="false"/>
         <Logger name="AdaptiveQuickReduct" level="debug" additivity="false"/>
+        <Logger name="AdaptiveQuickReductTest" level="debug" additivity="false"/>
+        <Logger name="Utils" level="debug" additivity="false"/>
         <Root level="debug">
             <AppenderRef ref="File" level="debug"/>
             <AppenderRef ref="STDOUT" level="info"/>

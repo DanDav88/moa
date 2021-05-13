@@ -4,7 +4,6 @@ import com.yahoo.labs.samoa.instances.Instance;
 import com.yahoo.labs.samoa.instances.Instances;
 import com.yahoo.labs.samoa.instances.WekaToSamoaInstanceConverter;
 import moa.classifiers.AbstractClassifier;
-import moa.tasks.AdaptiveQuickReductConfig;
 import moa.tasks.adaptive_quick_reduct.model.Reduct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,7 +20,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Utils {
-  private static final Logger logger = LogManager.getLogger(AdaptiveQuickReductConfig.class);
+  private static final Logger logger = LogManager.getLogger(Utils.class);
 
   private static final String format = "yyyyMMdd_HH_mm_ss";
   public static DateTimeFormatter formatter_yyyyMMdd_HH_mm_ss = DateTimeFormatter.ofPattern(format);

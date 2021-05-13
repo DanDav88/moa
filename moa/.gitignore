@@ -6,3 +6,4 @@
 *~
 *.bak
 
+/src/test/resources/adaptive_quick_reduct_datasets/
