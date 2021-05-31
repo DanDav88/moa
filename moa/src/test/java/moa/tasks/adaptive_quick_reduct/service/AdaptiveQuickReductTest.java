@@ -34,6 +34,52 @@ public class AdaptiveQuickReductTest {
 
   public static void main(String[] args) {
 
+//    testElectricityClassification();
+
+//    testGmscClassification();
+
+    testElectricityDriftDetection();
+
+  }
+
+  private static void testElectricityClassification(){
+    ArrayList<String> datasests = new ArrayList<>(3);
+    datasests.add("moa/src/test/resources/adaptive_quick_reduct_datasets/electricity_4.arff");
+    datasests.add("moa/src/test/resources/adaptive_quick_reduct_datasets/electricity_10.arff");
+    datasests.add("moa/src/test/resources/adaptive_quick_reduct_datasets/electricity_20.arff");
+
+    ArrayList<Integer> windowSizes = new ArrayList<>(10);
+    for(int i = 100; i <= 1000; i += 100)
+      windowSizes.add(i);
+
+    ArrayList<Float> overlapPercents = new ArrayList<>(3);
+    overlapPercents.add(0.1f);
+    overlapPercents.add(0.5f);
+    overlapPercents.add(0.8f);
+
+    ArrayList<Integer> kNeighbors = new ArrayList<>(4);
+    kNeighbors.add(3);
+    kNeighbors.add(7);
+    kNeighbors.add(9);
+    kNeighbors.add(11);
+
+    for(String datasetName : datasests) {
+      Instances instances = readInstances(datasetName);
+      logger.info(String.format("Dataset %s, num instances %d, num classes %d",
+              instances.getRelationName(), instances.numInstances(), instances.numClasses()));
+      for(int windowSize : windowSizes) {
+        for(float overlapPercent : overlapPercents) {
+          int overlap = (int) (windowSize * overlapPercent);
+          runBayesClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD);
+          for(Integer kNeighbor : kNeighbors) {
+            runKNNClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD, kNeighbor, windowSize);
+          }
+        }
+      }
+    }
+  }
+
+  private static void testGmscClassification(){
     String datasetName = "moa/src/test/resources/adaptive_quick_reduct_datasets/cs-training.arff";
 
     ArrayList<Integer> kNeighbors = new ArrayList<>(4);
@@ -64,42 +110,43 @@ public class AdaptiveQuickReductTest {
         );
       });
     }
+  }
 
-//ArrayList<String> datasests = new ArrayList<>(3);
-//    datasests.add("moa/src/test/resources/adaptive_quick_reduct_datasets/electricity_4.arff");
-//    datasests.add("moa/src/test/resources/adaptive_quick_reduct_datasets/electricity_10.arff");
-//    datasests.add("moa/src/test/resources/adaptive_quick_reduct_datasets/electricity_20.arff");
-//
-//    ArrayList<Integer> windowSizes = new ArrayList<>(10);
+  private static void testElectricityDriftDetection(){
+    ArrayList<String> datasests = new ArrayList<>(3);
+    datasests.add("moa/src/test/resources/adaptive_quick_reduct_datasets/electricity_Drifted.arff");
+
+    ArrayList<Integer> windowSizes = new ArrayList<>(10);
 //    for(int i = 100; i <= 1000; i += 100)
-//      windowSizes.add(i);
-//
-//    ArrayList<Float> overlapPercents = new ArrayList<>(3);
-//    overlapPercents.add(0.1f);
-//    overlapPercents.add(0.5f);
-//    overlapPercents.add(0.8f);
-//
-//    ArrayList<Integer> kNeighbors = new ArrayList<>(4);
-//    kNeighbors.add(3);
-//    kNeighbors.add(7);
-//    kNeighbors.add(9);
-//    kNeighbors.add(11);
-//
-//    for(String datasetName : datasests) {
-//      Instances instances = readInstances(datasetName);
-//      logger.info(String.format("Dataset %s, num instances %d, num classes %d",
-//              instances.getRelationName(), instances.numInstances(), instances.numClasses()));
-//      for(int windowSize : windowSizes) {
-//        for(float overlapPercent : overlapPercents) {
-//          int overlap = (int) (windowSize * overlapPercent);
-//          runBayesClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD);
-//          for(Integer kNeighbor : kNeighbors) {
-//            runKNNClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD, kNeighbor, windowSize);
-//          }
-//        }
-//      }
-//    }
-//
+      windowSizes.add(100);
+      windowSizes.add(500);
+      windowSizes.add(1000);
+
+    ArrayList<Float> overlapPercents = new ArrayList<>(3);
+    overlapPercents.add(0.1f);
+    overlapPercents.add(0.5f);
+    overlapPercents.add(0.8f);
+
+    ArrayList<Integer> kNeighbors = new ArrayList<>(4);
+    kNeighbors.add(3);
+    kNeighbors.add(7);
+    kNeighbors.add(9);
+    kNeighbors.add(11);
+
+    for(String datasetName : datasests) {
+      Instances instances = readInstances(datasetName);
+      logger.info(String.format("Dataset %s, num instances %d, num classes %d",
+              instances.getRelationName(), instances.numInstances(), instances.numClasses()));
+      for(int windowSize : windowSizes) {
+        for(float overlapPercent : overlapPercents) {
+          int overlap = (int) (windowSize * overlapPercent);
+          runBayesClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD);
+          kNeighbors.parallelStream().forEach(kNeighbor ->
+                  runKNNClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD, kNeighbor, windowSize)
+          );
+        }
+      }
+    }
   }
 
   private static void runKNNClassifications(Instances instances, int windowSize, int windowOverlap, double similarityThreshold, int kN, int storedInstances) {
