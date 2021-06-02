@@ -18,12 +18,13 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
   private final ArrayList<Integer> windowResizeSteps;
   private final int numInstances;
   private int currentIteration;
+  private final double RATIO_STEP;
 
   public AdaptiveWindow(int numInstances) {
-    this(numInstances, DEFAULT_WINDOW_SIZE, 0.5);
+    this(numInstances, DEFAULT_WINDOW_SIZE, 0.5, 0.2);
   }
 
-  public AdaptiveWindow(int numInstances, int startingWindowSize, double overlapPercentage) {
+  public AdaptiveWindow(int numInstances, int startingWindowSize, double overlapPercentage, double ratioStep) {
     super();
     this.windowSize = startingWindowSize;
     this.overlapPercentage = overlapPercentage;
@@ -41,6 +42,7 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
     this.numInstances = numInstances;
     this.currentIteration = 0;
     this.setTotalIterationNumber(this.numInstances);
+    this.RATIO_STEP = ratioStep;
   }
 
   private int computeCurrentOverlap() {
@@ -50,12 +52,11 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
   @Override
   public ArrayList<AbstractMap.SimpleEntry<Integer, Instance>> getNextWindow(ArrayList<Instance> allInstances) {
     double EQUALITY_RATIO = 1.0;
-    double RATIO_STEP = 0.2;
     this.currentAverageDispersion = getAverageFeaturesDispersion(allInstances);
     double dispersionRatio = this.currentAverageDispersion / this.previousAverageDispersion;
 
-    logger.debug(String.format("Iteration %d - Previous Dispersion = %f, Current Dispersion = %f, Current/Previous Ratio = %f",
-            this.currentIteration, this.previousAverageDispersion, this.currentAverageDispersion, dispersionRatio)
+    logger.debug(String.format("Iteration %d - Ratio Step = %f,  Previous Dispersion = %f, Current Dispersion = %f, Current/Previous Ratio = %f",
+            this.currentIteration, this.RATIO_STEP, this.previousAverageDispersion, this.currentAverageDispersion, dispersionRatio)
     );
     //first iteration or the ratio is less than 20%
 
@@ -70,21 +71,28 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
     }
 
     boolean isToIncrementWindowSize = dispersionRatio > EQUALITY_RATIO;
-    double shift = (EQUALITY_RATIO - dispersionRatio) / RATIO_STEP;
-    int intShift = Math.abs((int) (shift - shift % 1.0));
-
+    double shift = Math.abs(EQUALITY_RATIO - dispersionRatio);
     int currentIndexWindowSize = this.windowResizeSteps.indexOf(this.windowSize);
 
     if(isToIncrementWindowSize) {
-      int incrementIndex = Math.min((currentIndexWindowSize + intShift), (this.windowResizeSteps.size() - 1));
-      this.windowSize = this.windowResizeSteps.get(incrementIndex);
+      double difference = (this.windowResizeSteps.size() - 1) - currentIndexWindowSize;
+      int incrementIndex = (int) Math.floor(difference * shift);
+
+      if(incrementIndex <= 0)
+        incrementIndex++;
+
+      int windowSizeIndex = Math.min(currentIndexWindowSize + incrementIndex, (this.windowResizeSteps.size() - 1));
+      this.windowSize = this.windowResizeSteps.get(windowSizeIndex);
       this.overlap = this.computeCurrentOverlap();
       logger.debug(String.format("Iteration %d - Increased Window Size to = %d, Updated Window overlap = %d",
               this.currentIteration, this.windowSize, this.overlap));
     }
     else {
-      int decrementIndex = Math.max((currentIndexWindowSize - intShift), 0);
-      this.windowSize = this.windowResizeSteps.get(decrementIndex);
+      int decrementIndex = (int) Math.floor(currentIndexWindowSize * shift);
+      if(decrementIndex <= 0)
+        decrementIndex++;
+      int windowSizeIndex = Math.max(currentIndexWindowSize - decrementIndex, 0);
+      this.windowSize = this.windowResizeSteps.get(windowSizeIndex);
       this.overlap = this.computeCurrentOverlap();
       logger.debug(String.format("Iteration %d - Decreased Window Size to = %d, Updated Window overlap = %d",
               this.currentIteration, this.windowSize, this.overlap));
@@ -140,6 +148,10 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
             (this.windowSize - this.overlap)
     );
     currentIteration++;
+  }
+
+  public String toString() {
+    return String.format("AdaptiveWindows_wo_%d_rs_%d",(int)(this.overlapPercentage*100),(int)(this.RATIO_STEP*100));
   }
 
   @Override

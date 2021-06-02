@@ -31,15 +31,12 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
   private static final int DEFAULT_WINDOWS_OVERLAP = 90;
   private static final String AQR_CLASSIFICATION = "Aqr Classification run";
   private static final String NO_AQR_CLASSIFICATION = "Standard Classification run";
-  private static final double DEFAULT_SIMILARITY_THRESHOLD = 0.1;
+  private static final double similarityThreshold = 0.1;
 
   public static void main(String[] args) {
 
     testElectricityClassification();
-//    testGmscClassification();
-
-//    testElectricityDriftDetection();
-
+    testGmscClassification();
   }
 
   private static void testElectricityClassification() {
@@ -53,20 +50,26 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
     overlapPercents.add(0.8f);
 
     ArrayList<Integer> kNeighbors = new ArrayList<>(4);
-    kNeighbors.add(3);
+//    kNeighbors.add(3);
     kNeighbors.add(7);
-    kNeighbors.add(9);
-    kNeighbors.add(11);
+//    kNeighbors.add(9);
+//    kNeighbors.add(11);
 
+    ArrayList<Double> ratioSteps = new ArrayList<>(3);
+    ratioSteps.add(0.1);
+    ratioSteps.add(0.15);
+    ratioSteps.add(0.2);
 
     Instances instances = readInstances(datasetName);
     logger.info(String.format("Dataset %s, num instances %d, num classes %d",
             instances.getRelationName(), instances.numInstances(), instances.numClasses()));
 
     for(float overlapPercent : overlapPercents) {
-      runBayesClassifications(instances, initialWindowSize, overlapPercent, DEFAULT_SIMILARITY_THRESHOLD);
-      for(Integer kNeighbor : kNeighbors) {
-        runKNNClassifications(instances, initialWindowSize, overlapPercent, DEFAULT_SIMILARITY_THRESHOLD, kNeighbor, initialWindowSize);
+      for(double ratioStep : ratioSteps) {
+        runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
+        for(Integer kNeighbor : kNeighbors) {
+          runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbor, initialWindowSize);
+        }
       }
     }
   }
@@ -75,10 +78,10 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
     String datasetName = "moa/src/test/resources/adaptive_quick_reduct_datasets/cs-training.arff";
 
     ArrayList<Integer> kNeighbors = new ArrayList<>(4);
-    kNeighbors.add(3);
+//    kNeighbors.add(3);
     kNeighbors.add(7);
-    kNeighbors.add(9);
-    kNeighbors.add(11);
+//    kNeighbors.add(9);
+//    kNeighbors.add(11);
 
     int initialWindowSize = 500;
 
@@ -87,67 +90,37 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
     overlapPercents.add(0.5f);
     overlapPercents.add(0.8f);
 
+    ArrayList<Double> ratioSteps = new ArrayList<>(3);
+    ratioSteps.add(0.1);
+    ratioSteps.add(0.15);
+    ratioSteps.add(0.2);
+
     Instances instances = readInstances(datasetName);
     logger.info(String.format("Dataset %s, num instances %d, num classes %d",
             instances.getRelationName(), instances.numInstances(), instances.numClasses()));
 
     for(float overlapPercent : overlapPercents) {
-      runBayesClassifications(instances, initialWindowSize, overlapPercent, DEFAULT_SIMILARITY_THRESHOLD);
-      for(Integer kNeighbor : kNeighbors) {
-        runKNNClassifications(instances, initialWindowSize, overlapPercent, DEFAULT_SIMILARITY_THRESHOLD, kNeighbor, initialWindowSize);
-      }
-    }
-  }
-
-  private static void testElectricityDriftDetection() {
-    ArrayList<String> datasests = new ArrayList<>(3);
-    datasests.add("moa/src/test/resources/adaptive_quick_reduct_datasets/electricity_Drifted.arff");
-
-    ArrayList<Integer> windowSizes = new ArrayList<>(10);
-//    for(int i = 100; i <= 1000; i += 100)
-    windowSizes.add(100);
-    windowSizes.add(500);
-    windowSizes.add(1000);
-
-    ArrayList<Float> overlapPercents = new ArrayList<>(3);
-    overlapPercents.add(0.1f);
-    overlapPercents.add(0.5f);
-    overlapPercents.add(0.8f);
-
-    ArrayList<Integer> kNeighbors = new ArrayList<>(4);
-    kNeighbors.add(3);
-    kNeighbors.add(7);
-    kNeighbors.add(9);
-    kNeighbors.add(11);
-
-    for(String datasetName : datasests) {
-      Instances instances = readInstances(datasetName);
-      logger.info(String.format("Dataset %s, num instances %d, num classes %d",
-              instances.getRelationName(), instances.numInstances(), instances.numClasses()));
-      for(int windowSize : windowSizes) {
-        for(float overlapPercent : overlapPercents) {
-          int overlap = (int) (windowSize * overlapPercent);
-          runBayesClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD);
-          kNeighbors.parallelStream().forEach(kNeighbor ->
-                  runKNNClassifications(instances, windowSize, overlap, DEFAULT_SIMILARITY_THRESHOLD, kNeighbor, windowSize)
-          );
+      for(double ratioStep : ratioSteps) {
+        runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
+        for(Integer kNeighbor : kNeighbors) {
+          runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbor, initialWindowSize);
         }
       }
     }
   }
 
-  private static void runKNNClassifications(Instances instances, int windowSize, double overlapPercentage, double similarityThreshold, int kN, int storedInstances) {
+  private static void runKNNClassifications(Instances instances, int windowSize, double overlapPercentage, double ratioStep, int kN, int storedInstances) {
 //    DistanceCalculatorAbstract distanceCalculator = new ManhattanDistanceCalculator();
     DistanceCalculatorAbstract distanceCalculator = new EuclideanDistanceCalculator();
     AdaptiveQuickReduct aqr = new AdaptiveQuickReduct(instances, distanceCalculator, similarityThreshold);
-    Window<Instance> windowsAqr = new AdaptiveWindow(instances.numInstances(), windowSize, overlapPercentage);
+    Window<Instance> windowsAqr = new AdaptiveWindow(instances.numInstances(), windowSize, overlapPercentage, ratioStep);
     AbstractClassifier classifierAQR = new kNN(Optional.of(kN), Optional.of(storedInstances));
 
     logger.info(String.format("KNN - Window Size %d, windows overlap percentage %f, num iteration %d, K Neighbor %d, KNN Stored Instances %d, AQR distance type %s, AQR similarity threshold %f",
             windowSize, overlapPercentage, windowsAqr.getTotalIterationNumber(), kN, storedInstances,
             distanceCalculator.getClass().getSimpleName(), similarityThreshold));
 
-    Window<Instance> windowsStd = new AdaptiveWindow(instances.numInstances(), windowSize, overlapPercentage);
+    Window<Instance> windowsStd = new AdaptiveWindow(instances.numInstances(), windowSize, overlapPercentage, ratioStep);
     AbstractClassifier classifier = new kNN(Optional.of(kN), Optional.of(storedInstances));
 
     ArrayList<ResultBean> accuracies = runClassificationStandard(instances, windowsStd, classifier);
@@ -155,9 +128,10 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
 
     String relationName = String.join("_", instances.getRelationName().split(" "));
     String timeStamp = ZonedDateTime.now().format(formatter_yyyyMMdd_HH_mm_ss);
-    String configInfo = String.format("ws_%s_wo_%s_k_%s",
+    String configInfo = String.format("ws_%s_wo_%s_rs_%s_k_%s",
             getPaddedInt(windowSize, 4),
             getPaddedInt((int) (overlapPercentage * 100), 3),
+            getPaddedInt((int) (ratioStep * 100), 3),
             getPaddedInt(kN, 2)
     );
 
@@ -170,11 +144,11 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
     logger.info(String.format("Exported %s ", filenameAccuracies));
   }
 
-  private static void runBayesClassifications(Instances instances, int windowSize, double overlapPercentage, double similarityThreshold) {
+  private static void runBayesClassifications(Instances instances, int windowSize, double overlapPercentage, double ratioStep) {
 //    DistanceCalculatorAbstract distanceCalculator = new ManhattanDistanceCalculator();
     DistanceCalculatorAbstract distanceCalculator = new EuclideanDistanceCalculator();
     AdaptiveQuickReduct aqr = new AdaptiveQuickReduct(instances, distanceCalculator, similarityThreshold);
-    Window<Instance> windowsAqr = new AdaptiveWindow(instances.numInstances(), windowSize, overlapPercentage);
+    Window<Instance> windowsAqr = new AdaptiveWindow(instances.numInstances(), windowSize, overlapPercentage, ratioStep);
     AbstractClassifier classifierAQR = new NaiveBayes();
     classifierAQR.resetLearningImpl();
 
@@ -182,7 +156,7 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
             windowSize, overlapPercentage, windowsAqr.getTotalIterationNumber(),
             distanceCalculator.getClass().getSimpleName(), similarityThreshold));
 
-    Window<Instance> windowsStd = new AdaptiveWindow(instances.numInstances(), windowSize, overlapPercentage);
+    Window<Instance> windowsStd = new AdaptiveWindow(instances.numInstances(), windowSize, overlapPercentage, ratioStep);
     AbstractClassifier classifier = new NaiveBayes();
     classifier.resetLearningImpl();
 
@@ -191,9 +165,10 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
 
     String relationName = String.join("_", instances.getRelationName().split(" "));
     String timeStamp = ZonedDateTime.now().format(formatter_yyyyMMdd_HH_mm_ss);
-    String configInfo = String.format("ws_%s_wo_%s",
+    String configInfo = String.format("ws_%s_wo_%s_rs_%s",
             getPaddedInt(windowSize, 4),
-            getPaddedInt((int) (overlapPercentage * 100), 3)
+            getPaddedInt((int) (overlapPercentage * 100), 3),
+            getPaddedInt((int) (ratioStep * 100), 3)
     );
 
     String filenameAccuraciesAQR = String.format("moa/CSV/AQR_BAYES_ACC_%s_%s_%s.csv", relationName, configInfo, timeStamp);
