@@ -5,6 +5,7 @@ import com.yahoo.labs.samoa.instances.Instances;
 import com.yahoo.labs.samoa.instances.WekaToSamoaInstanceConverter;
 import moa.classifiers.AbstractClassifier;
 import moa.tasks.adaptive_quick_reduct.model.Reduct;
+import moa.tasks.adaptive_quick_reduct.model.ResultBean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,8 +80,25 @@ public class Utils {
     }
   }
 
+  public static void exportResultBeanCSV(ArrayList<ResultBean> results, String filename) {
+    try {
+      FileWriter writer = new FileWriter(filename);
+
+      String header = "Iteration_Number,Accuracy,Window_size";
+      writer.write(header + System.lineSeparator());
+
+      for(int i = 0; i < results.size(); i++) {
+        String lineToWrite = String.format("%d,%s,%s", i, results.get(i).getAccuracyValue(), results.get(i).getWindowSize());
+        writer.write(lineToWrite + System.lineSeparator());
+      }
+      writer.close();
+    } catch(IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   public static HashSet<String> getAttributesToRemove(Instances instances, HashSet<Integer> currentReduct) {
-    int numAttributes = instances.numAttributes() -1;
+    int numAttributes = instances.numAttributes() - 1;
     HashSet<Integer> fullSetAttributes = new HashSet<>(numAttributes);
 
     for(int i = 0; i < numAttributes; i++) {
@@ -94,7 +112,7 @@ public class Utils {
     return (HashSet<String>) attributesName;
   }
 
-  public static void removeAttributesFromInstances(Instances instances, HashSet<Integer> currentReduct){
+  public static void removeAttributesFromInstances(Instances instances, HashSet<Integer> currentReduct) {
     HashSet<String> indexAttributesToRemove = getAttributesToRemove(instances, currentReduct);
 
     indexAttributesToRemove.forEach(attributeName -> {

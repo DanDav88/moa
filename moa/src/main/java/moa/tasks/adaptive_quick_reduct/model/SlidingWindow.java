@@ -7,14 +7,16 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
   public static final int DEFAULT_WINDOW_SIZE = 500;
   public static final int DEFAULT_OVERLAP = 250;
 
-  private final int windowSize;
-  private final int overlap;
-  private int iStart;
-  private int iEnd;
-  private int currentStart;
-  private int currentEnd;
-  private boolean areInstancesFinished = false;
-  private int totalIterationNumber;
+  protected int windowSize;
+  protected int overlap;
+  protected int iStart;
+  protected int iEnd;
+  protected int currentStart;
+  protected int currentEnd;
+  protected boolean areInstancesFinished = false;
+  protected int totalIterationNumber;
+
+  public SlidingWindow(){};
 
   public SlidingWindow(int numInstances) {
     this(numInstances, DEFAULT_WINDOW_SIZE, DEFAULT_OVERLAP);
@@ -30,7 +32,7 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
     this.setTotalIterationNumber(numInstances);
   }
 
-  private void setTotalIterationNumber(int numInstances) {
+  protected void setTotalIterationNumber(int numInstances) {
     this.totalIterationNumber = 2 + Math.floorDiv(
             (numInstances - windowSize),
             (this.windowSize - this.overlap)
@@ -83,5 +85,10 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
   @Override
   public String toString() {
     return String.format("SlidingWindow_ws_%d_wo_%d",this.windowSize,this.overlap);
+  }
+
+  @Override
+  public int getWindowSize() {
+    return windowSize;
   }
 }
