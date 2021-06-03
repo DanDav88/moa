@@ -64,13 +64,21 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
     logger.info(String.format("Dataset %s, num instances %d, num classes %d",
             instances.getRelationName(), instances.numInstances(), instances.numClasses()));
 
+//    for(float overlapPercent : overlapPercents) {
+//      for(double ratioStep : ratioSteps) {
+//        runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
+//        for(Integer kNeighbor : kNeighbors) {
+//          runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbor, initialWindowSize);
+//        }
+//      }
+//    }
+
     for(float overlapPercent : overlapPercents) {
-      for(double ratioStep : ratioSteps) {
-        runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
-        for(Integer kNeighbor : kNeighbors) {
-          runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbor, initialWindowSize);
-        }
-      }
+      ratioSteps.parallelStream().forEach(ratioStep -> {
+                runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
+                runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbors.get(0), initialWindowSize);
+              }
+      );
     }
   }
 
@@ -99,13 +107,21 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
     logger.info(String.format("Dataset %s, num instances %d, num classes %d",
             instances.getRelationName(), instances.numInstances(), instances.numClasses()));
 
+//    for(float overlapPercent : overlapPercents) {
+//      for(double ratioStep : ratioSteps) {
+//        runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
+//        for(Integer kNeighbor : kNeighbors) {
+//          runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbor, initialWindowSize);
+//        }
+//      }
+//    }
+
     for(float overlapPercent : overlapPercents) {
-      for(double ratioStep : ratioSteps) {
-        runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
-        for(Integer kNeighbor : kNeighbors) {
-          runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbor, initialWindowSize);
-        }
-      }
+      ratioSteps.parallelStream().forEach(ratioStep -> {
+                runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
+                runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbors.get(0), initialWindowSize);
+              }
+      );
     }
   }
 
@@ -245,7 +261,7 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
       //--------------------------------------LOAD NEXT WINDOW----------------------------------------------------------
       iWindow = windows.getNextWindow(instances.getInstances());
       if(classifier instanceof kNN) {
-        classifier.resetLearningImpl();
+//        classifier.resetLearningImpl();
         ((kNN) classifier).setLimitOption(windows.getWindowSize());
       }
       iterationNumber++;
@@ -301,7 +317,7 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
       //--------------------------------------LOAD NEXT WINDOW----------------------------------------------------------
       iWindow = windows.getNextWindow(instances.getInstances());
       if(classifier instanceof kNN) {
-        classifier.resetLearningImpl();
+//        classifier.resetLearningImpl();
         ((kNN) classifier).setLimitOption(windows.getWindowSize());
       }
       iterationNumber++;

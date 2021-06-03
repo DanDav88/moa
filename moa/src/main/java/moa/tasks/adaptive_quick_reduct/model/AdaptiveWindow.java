@@ -98,6 +98,8 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
               this.currentIteration, this.windowSize, this.overlap));
     }
 
+    this.iStart = Math.max(currentEnd - overlap, 0);
+    this.iEnd = this.iStart + (this.windowSize - overlap);
     this.previousAverageDispersion = this.currentAverageDispersion;
     this.setTotalIterationNumber(allInstances.size());
     return super.getNextWindow(allInstances);
@@ -151,7 +153,7 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
   }
 
   public String toString() {
-    return String.format("AdaptiveWindows_wo_%d_rs_%d",(int)(this.overlapPercentage*100),(int)(this.RATIO_STEP*100));
+    return String.format("AdaptiveWindows_wo_%d_rs_%d", (int) (this.overlapPercentage * 100), (int) (this.RATIO_STEP * 100));
   }
 
   @Override
