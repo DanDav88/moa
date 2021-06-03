@@ -98,8 +98,14 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
               this.currentIteration, this.windowSize, this.overlap));
     }
 
-    this.iStart = Math.max(currentEnd - overlap, 0);
-    this.iEnd = this.iStart + (this.windowSize - overlap);
+    if(this.overlapPercentage > 0.51) {
+      this.iStart = Math.max(currentEnd - overlap / 2, 0);
+      this.iEnd = this.iStart + (this.windowSize - overlap / 2);
+    }
+    else {
+      this.iStart = Math.max(currentEnd - overlap, 0);
+      this.iEnd = this.iStart + (this.windowSize - overlap);
+    }
     this.previousAverageDispersion = this.currentAverageDispersion;
     this.setTotalIterationNumber(allInstances.size());
     return super.getNextWindow(allInstances);

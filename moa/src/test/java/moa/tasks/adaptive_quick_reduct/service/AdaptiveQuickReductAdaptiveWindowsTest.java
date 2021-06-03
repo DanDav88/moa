@@ -27,8 +27,6 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
   }
 
   private static final Logger logger = LogManager.getLogger(AdaptiveQuickReductAdaptiveWindowsTest.class);
-  private static final int DEFAULT_WINDOWS_SIZE = 100;
-  private static final int DEFAULT_WINDOWS_OVERLAP = 90;
   private static final String AQR_CLASSIFICATION = "Aqr Classification run";
   private static final String NO_AQR_CLASSIFICATION = "Standard Classification run";
   private static final double similarityThreshold = 0.1;

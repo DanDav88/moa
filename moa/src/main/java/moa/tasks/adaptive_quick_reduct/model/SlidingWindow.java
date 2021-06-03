@@ -1,9 +1,13 @@
 package moa.tasks.adaptive_quick_reduct.model;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.AbstractMap;
 import java.util.ArrayList;
 
 public class SlidingWindow<instanceType> extends Window<instanceType> {
+  private static final Logger logger = LogManager.getLogger(SlidingWindow.class);
   public static final int DEFAULT_WINDOW_SIZE = 500;
   public static final int DEFAULT_OVERLAP = 250;
 
@@ -68,6 +72,10 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
 
       iStart = rightLimit - overlap;
       iEnd += (windowSize - overlap);
+
+      logger.debug(String.format("iStart = %d, iEnd = %d, CurrentStart = %d, CurrentEnd = %d",
+              iStart, iEnd, currentStart,currentEnd)
+      );
     }
 
     return instancesToReturn;
