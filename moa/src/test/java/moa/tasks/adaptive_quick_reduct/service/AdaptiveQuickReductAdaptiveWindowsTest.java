@@ -33,8 +33,9 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
 
   public static void main(String[] args) {
 
-    testElectricityClassification();
-    testGmscClassification();
+//    testElectricityClassification();
+//    testGmscClassification();
+    testElectricityDriftDetection();
   }
 
   private static void testElectricityClassification() {
@@ -48,8 +49,8 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
     overlapPercents.add(0.8f);
 
     ArrayList<Integer> kNeighbors = new ArrayList<>(4);
-//    kNeighbors.add(3);
-    kNeighbors.add(7);
+    kNeighbors.add(3);
+//    kNeighbors.add(7);
 //    kNeighbors.add(9);
 //    kNeighbors.add(11);
 
@@ -72,7 +73,7 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
 //    }
 
     for(float overlapPercent : overlapPercents) {
-      ratioSteps.parallelStream().forEach(ratioStep -> {
+      ratioSteps.stream().forEach(ratioStep -> {
                 runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
                 runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbors.get(0), initialWindowSize);
               }
@@ -118,6 +119,39 @@ public class AdaptiveQuickReductAdaptiveWindowsTest {
       ratioSteps.parallelStream().forEach(ratioStep -> {
                 runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
                 runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbors.get(0), initialWindowSize);
+              }
+      );
+    }
+  }
+
+  private static void testElectricityDriftDetection() {
+    String datasetName = "moa/src/test/resources/adaptive_quick_reduct_datasets/electricity_Drifted.arff";
+
+    int initialWindowSize = 500;
+    ArrayList<Float> overlapPercents = new ArrayList<>(3);
+    overlapPercents.add(0.1f);
+    overlapPercents.add(0.5f);
+    overlapPercents.add(0.8f);
+
+    ArrayList<Integer> kNeighbors = new ArrayList<>(4);
+    kNeighbors.add(3);
+    kNeighbors.add(7);
+
+    ArrayList<Double> ratioSteps = new ArrayList<>(3);
+    ratioSteps.add(0.1);
+    ratioSteps.add(0.15);
+    ratioSteps.add(0.2);
+
+    Instances instances = readInstances(datasetName);
+    logger.info(String.format("Dataset %s, num instances %d, num classes %d",
+            instances.getRelationName(), instances.numInstances(), instances.numClasses()));
+
+    for(float overlapPercent : overlapPercents) {
+      ratioSteps.forEach(ratioStep -> {
+                runBayesClassifications(instances, initialWindowSize, overlapPercent, ratioStep);
+                kNeighbors.parallelStream().forEach(kNeighbor ->
+                        runKNNClassifications(instances, initialWindowSize, overlapPercent, ratioStep, kNeighbor, initialWindowSize)
+                );
               }
       );
     }
