@@ -20,7 +20,7 @@ public class SlidingWindow<instanceType> extends Window<instanceType> {
   protected boolean areInstancesFinished = false;
   protected int totalIterationNumber;
 
-  public SlidingWindow(){};
+  protected SlidingWindow(){};
 
   public SlidingWindow(int numInstances) {
     this(numInstances, DEFAULT_WINDOW_SIZE, DEFAULT_OVERLAP);

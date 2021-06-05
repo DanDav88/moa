@@ -24,7 +24,7 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
     this(numInstances, DEFAULT_WINDOW_SIZE, 0.5, 0.2);
   }
 
-  public AdaptiveWindow(int numInstances, int startingWindowSize, double overlapPercentage, double ratioStep) {
+  public AdaptiveWindow(int numInstances, int startingWindowSize, double overlapPercentage, double tau) {
     super();
     this.windowSize = startingWindowSize;
     this.overlapPercentage = overlapPercentage;
@@ -42,7 +42,7 @@ public class AdaptiveWindow extends SlidingWindow<Instance> {
     this.numInstances = numInstances;
     this.currentIteration = 0;
     this.setTotalIterationNumber(this.numInstances);
-    this.RATIO_STEP = ratioStep;
+    this.RATIO_STEP = tau;
   }
 
   private int computeCurrentOverlap() {
